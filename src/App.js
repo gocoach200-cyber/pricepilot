@@ -1,22 +1,28 @@
 import { useState } from "react";
- 
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.REACT_APP_SUPABASE_URL,
+  process.env.REACT_APP_SUPABASE_KEY
+);
+
 // ─── Config ───────────────────────────────────────────────────────────────────
 const DRIVER_RATE    = 14.50;
 const FUEL_PER_LITRE = 1.75;  // current diesel price per litre
 const MILES_PER_LITRE = 6;    // realistic for loaded minibus
 const RUNNING_UPLIFT  = 1.25; // 25% uplift for wear, tyres, maintenance
 const FUEL_PER_MILE   = (FUEL_PER_LITRE / MILES_PER_LITRE) * RUNNING_UPLIFT; // ~36p per mile
-const API_KEY = process.env.REACT_APP_ANTHROPIC_KEY;
- 
+const API_KEY        = "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";
+
 // ─── Survey Questions ────────────────────────────────────────────────────────
 const VEHICLE_SIZES = ["8-seater","12-seater","16-seater","24-seater","32-seater","49-seater"];
- 
+
 const UK_CITIES = [
   "London","Birmingham","Manchester","Leeds","Bristol","Sheffield",
   "Liverpool","Newcastle","Nottingham","Cardiff","Edinburgh","Glasgow",
   "Reading","Brighton","Southampton","Leicester","Coventry","Oxford"
 ];
- 
+
 const TRIPS_BY_BASE = {
   "London":       [
     { from:"Peckham SE15, London",    to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:30" },
@@ -66,7 +72,7 @@ const TRIPS_BY_BASE = {
     { from:"City Centre",             to:"Birmingham City Centre",type:"Same day return", time:"09:00-17:30" },
   ],
 };
- 
+
 const getPaxFromVehicle = (vehicle) => {
   if (vehicle === "8-seater")  return 8;
   if (vehicle === "12-seater") return 12;
@@ -76,13 +82,13 @@ const getPaxFromVehicle = (vehicle) => {
   if (vehicle === "49-seater") return 45;
   return 16;
 };
- 
+
 const getSurveyTrips = (base, vehicle) => {
   const trips = TRIPS_BY_BASE[base] || TRIPS_BY_BASE["default"];
   const pax   = getPaxFromVehicle(vehicle);
   return trips.slice(0, 3).map(t => ({ ...t, pax }));
 };
- 
+
 // ─── Real Market Data (collected from UK operators, May 2025) ─────────────────
 const MARKET_DATA = [
   { from:"birmingham", to:"manchester", pax:16, type:"return", avg:583, low:575, high:600 },
@@ -98,7 +104,7 @@ const MARKET_DATA = [
   { from:"brixton",    to:"windsor",    pax:16, type:"return", avg:510, low:495, high:525 },
   { from:"peckham",    to:"heathrow",   pax:14, type:"one-way", avg:470, low:420, high:495 },
 ];
- 
+
 // Known UK road distances (miles, one way)
 const KNOWN_DISTANCES = [
   { from:"london", to:"manchester",  miles:200 },
@@ -141,7 +147,7 @@ const KNOWN_DISTANCES = [
   { from:"reading",    to:"birmingham", miles:100 },
   { from:"reading",    to:"bristol",    miles:75  },
 ];
- 
+
 const findKnownDistance = (from, to) => {
   const f = from.toLowerCase();
   const t = to.toLowerCase();
@@ -156,7 +162,7 @@ const findKnownDistance = (from, to) => {
   }
   return null;
 };
- 
+
 // Find closest market data match
 const findMarketPrice = (from, to, pax, type) => {
   const f = from.toLowerCase();
@@ -183,10 +189,10 @@ const findMarketPrice = (from, to, pax, type) => {
   // Require both locations to match (score >= 6) to show market data
   return bestScore >= 6 ? best : null;
 };
- 
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt  = (n) => typeof n === "number" ? "£" + Math.round(n).toLocaleString("en-GB") : n;
- 
+
 const isBusy = (d) => {
   if (!d) return null;
   const dt = new Date(d), m = dt.getMonth(), day = dt.getDate();
@@ -196,11 +202,11 @@ const isBusy = (d) => {
   if (m === 3 && day <= 14)  return "Easter period — consider pricing higher";
   return null;
 };
- 
+
 const isLondon = (a, b) =>
   ["london","heathrow","gatwick","stansted","wembley","luton","canary wharf","o2","brixton","peckham","hackney","camden","islington"]
   .some(k => (a + b).toLowerCase().includes(k));
- 
+
 const waMsg = (from, to, pax, date, price, vehicle) => {
   const d = date ? new Date(date).toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" }) : "";
   return "Hi, thank you for your enquiry!\n\n" +
@@ -213,7 +219,7 @@ const waMsg = (from, to, pax, date, price, vehicle) => {
     "This includes a professional licensed driver and a fully insured vehicle.\n\n" +
     "Please don't hesitate to get in touch if you have any questions. We look forward to travelling with you!";
 };
- 
+
 const buildPrompt = (from, to, pax, date, time, trip, retDate, retTime, jobs, variation, miles) => {
   const retLine = trip === "return" ? "\nReturn: " + retDate + " " + retTime : "";
   const varLine = variation === "higher" ? "\nPrice 10% HIGHER." : variation === "lower" ? "\nPrice 10% LOWER." : "";
@@ -232,14 +238,14 @@ const buildPrompt = (from, to, pax, date, time, trip, retDate, retTime, jobs, va
     "\nDate: " + date + " " + time + "\nTrip: " + trip + retLine + milesLine + hist + varLine + "\n\n" +
     'Reply ONLY with JSON:\n{"price":450,"low":420,"high":490,"vehicle":"16-seater","miles":90,"notes":"One sentence."}';
 };
- 
+
 const TAGS = {
   accepted:    { bg:"#16a34a22", color:"#4ade80", border:"1px solid #16a34a55", label:"Accepted"           },
   rejected:    { bg:"#ef444422", color:"#f87171", border:"1px solid #ef444455", label:"Rejected"           },
   no_response: { bg:"#21262d",   color:"#7d8590", border:"1px solid #30363d",   label:"No Response"        },
   different:   { bg:"#1e3a5f",   color:"#60a5fa", border:"1px solid #2563eb44", label:"Quoted Differently"  },
 };
- 
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [from,       setFrom]       = useState("");
@@ -268,7 +274,7 @@ export default function App() {
   const [surveyAnswers,setSurveyAnswers]= useState([]);
   const [surveyInput,  setSurveyInput]  = useState("");
   const [surveyDone,   setSurveyDone]   = useState(false);
- 
+
   const callAPI = async (variation) => {
     const ctrl = new AbortController();
     const tid  = setTimeout(() => ctrl.abort(), 20000);
@@ -294,7 +300,7 @@ export default function App() {
       return JSON.parse(match[0]);
     } catch(e) { clearTimeout(tid); throw e; }
   };
- 
+
   const getPrice = async (variation) => {
     if (!from || !to || !pax || !date) { setError("Please fill in pickup, dropoff, passengers and date."); return; }
     setError(""); setResult(null); setLogged(false); setAltPrice(""); setIsReg(false); setLoading(true);
@@ -302,18 +308,18 @@ export default function App() {
     catch(e) { setError(e.name === "AbortError" ? "Timed out. Please try again." : "Error: " + e.message); }
     setLoading(false);
   };
- 
+
   const logJob = (outcome) => {
     const actual = outcome === "different" && altPrice ? parseInt(altPrice) : result.price;
     setJobs(prev => [{ id:Date.now(), from, to, pax, trip, date, aiPrice:result.price, actual, outcome }, ...prev]);
     setLogged(true);
   };
- 
+
   const copyWA = () => {
     navigator.clipboard.writeText(waMsg(from, to, pax, date, displayPrice, result.vehicle));
     setCopied(true); setTimeout(() => setCopied(false), 2500);
   };
- 
+
   // ── Derived values ──
   const marketMatch   = result ? findMarketPrice(from, to, pax, trip) : null;
   const similarJobs   = jobs.filter(j => from.length > 3 && (
@@ -322,7 +328,7 @@ export default function App() {
   )).slice(0, 3);
   const myAvgPrice    = similarJobs.length
     ? Math.round(similarJobs.reduce((a,j) => a + j.actual, 0) / similarJobs.length) : null;
- 
+
   const accepted      = jobs.filter(j => j.outcome === "accepted").length;
   const avgP          = jobs.length ? Math.round(jobs.reduce((a,j) => a+j.actual,0) / jobs.length) : 0;
   const displayPrice  = result ? (isReg ? Math.round(result.price * 0.9) : result.price) : 0;
@@ -332,7 +338,7 @@ export default function App() {
                     : knownMiles  ? knownMiles
                     : (result     ? result.miles : 0);
   const milesSource = manualMiles ? "entered" : knownMiles ? "known route" : "AI estimate";
- 
+
   // Total miles calculation:
   // One way:              A->B                    = 1x one way
   // Same day return:      A->B->A                 = 2x one way
@@ -342,7 +348,7 @@ export default function App() {
                    : oneWayMiles;
   const fuel          = Math.round(totalMiles * FUEL_PER_MILE);
   const litres        = Math.round(totalMiles / MILES_PER_LITRE);
- 
+
   const driverHours   = (() => {
     if (trip === "return-different") {
       // Two separate one-way drives on different days
@@ -357,7 +363,7 @@ export default function App() {
     // One way or fallback - driving time only
     return oneWayMiles ? Math.round((oneWayMiles / 40) * 10) / 10 : 0;
   })();
- 
+
   const MIN_DRIVER_PAY = 60; // minimum 4 hours at £14.50 = £58, rounded to £60
   const driverCost    = Math.max(MIN_DRIVER_PAY, Math.round(driverHours * DRIVER_RATE));
   const costs         = fuel + driverCost;
@@ -367,43 +373,43 @@ export default function App() {
   const perPerson     = pax && displayPrice ? Math.round(displayPrice / parseInt(pax)) : 0;
   const season        = isBusy(date);
   const congestion    = from && to && isLondon(from, to);
- 
+
   return (
     <div style={{ minHeight:"100vh", background:"#0d1117", color:"#e6edf3", fontFamily:"sans-serif", padding:20 }}>
     <div style={{ maxWidth:520, margin:"0 auto" }}>
- 
+
       <div style={{ marginBottom:20 }}>
         <div style={{ fontSize:22, fontWeight:800, color:"#f59e0b" }}>PricePilot</div>
         <div style={{ fontSize:13, color:"#7d8590" }}>Minibus Operator Pricing Tool</div>
       </div>
- 
+
       {/* ── Survey Popup ── */}
       {(showSurvey === true && surveyDone === false) ? (
         <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.75)", zIndex:100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
           <div style={{ background:"#161b22", border:"1px solid #21262d", borderRadius:12, padding:24, maxWidth:480, width:"100%" }}>
- 
+
             {/* Screen 1 - Setup */}
             {!setupDone && (
               <>
                 <div style={{ fontSize:11, color:"#f59e0b", textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>Quick Setup</div>
                 <div style={{ fontSize:16, fontWeight:700, color:"#f0f6fc", marginBottom:6 }}>Welcome to PricePilot</div>
                 <div style={{ fontSize:13, color:"#7d8590", marginBottom:20 }}>Tell us a bit about your operation so we can show you the most relevant pricing data.</div>
- 
+
                 <label style={{ display:"block", fontSize:11, fontWeight:600, color:"#7d8590", textTransform:"uppercase", marginBottom:6 }}>Where are you based?</label>
                 <select style={{ ...I, marginBottom:14 }} value={operatorBase} onChange={e => setOperatorBase(e.target.value)}>
                   <option value="">Select your city...</option>
                   {UK_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
- 
+
                 <label style={{ display:"block", fontSize:11, fontWeight:600, color:"#7d8590", textTransform:"uppercase", marginBottom:6 }}>What is your largest vehicle?</label>
                 <select style={{ ...I, marginBottom:20 }} value={operatorVehicle} onChange={e => setOperatorVehicle(e.target.value)}>
                   <option value="">Select vehicle size...</option>
                   {VEHICLE_SIZES.map(v => <option key={v} value={v}>{v}</option>)}
                 </select>
- 
+
                 <div style={{ display:"flex", gap:10 }}>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (!operatorBase || !operatorVehicle) return;
                       const trips = getSurveyTrips(operatorBase, operatorVehicle);
                       setSurveyTrips(trips);
@@ -420,14 +426,14 @@ export default function App() {
                 <div style={{ fontSize:11, color:"#484f58", marginTop:12, textAlign:"center" }}>Takes 60 seconds · Helps improve your quotes</div>
               </>
             )}
- 
+
             {/* Screen 2 - Survey Questions */}
             {setupDone && surveyTrips.length > 0 && (
               <>
                 <div style={{ fontSize:11, color:"#f59e0b", textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>Question {surveyStep + 1} of {surveyTrips.length}</div>
                 <div style={{ fontSize:16, fontWeight:700, color:"#f0f6fc", marginBottom:6 }}>What would you charge?</div>
                 <div style={{ fontSize:13, color:"#7d8590", marginBottom:16 }}>Your answer is anonymous and helps build accurate market pricing.</div>
- 
+
                 <div style={{ background:"#0d1117", borderRadius:8, padding:14, marginBottom:16 }}>
                   <div style={{ fontSize:13, color:"#e6edf3", marginBottom:6 }}>
                     <span style={{ color:"#f59e0b", fontWeight:700 }}>{surveyTrips[surveyStep].from}</span>
@@ -438,7 +444,7 @@ export default function App() {
                     {surveyTrips[surveyStep].pax} passengers · {surveyTrips[surveyStep].type} · {surveyTrips[surveyStep].time}
                   </div>
                 </div>
- 
+
                 <label style={{ display:"block", fontSize:11, fontWeight:600, color:"#7d8590", textTransform:"uppercase", marginBottom:6 }}>Your price (£)</label>
                 <input
                   style={{ ...I, marginBottom:16, fontSize:18, fontWeight:700 }}
@@ -447,14 +453,14 @@ export default function App() {
                   value={surveyInput}
                   onChange={e => setSurveyInput(e.target.value)}
                 />
- 
+
                 {/* Progress dots */}
                 <div style={{ display:"flex", gap:6, justifyContent:"center", marginBottom:16 }}>
                   {surveyTrips.map((_, i) => (
                     <div key={i} style={{ width:8, height:8, borderRadius:"50%", background: i <= surveyStep ? "#f59e0b" : "#30363d" }} />
                   ))}
                 </div>
- 
+
                 <div style={{ display:"flex", gap:10 }}>
                   <button
                     onClick={() => {
@@ -462,6 +468,18 @@ export default function App() {
                       const updated = [...surveyAnswers, { ...surveyTrips[surveyStep], price: parseInt(surveyInput) }];
                       setSurveyAnswers(updated);
                       setSurveyInput("");
+                      // Save to Supabase
+                      try {
+                        await supabase.from("survey_answers").insert({
+                          operator_base: operatorBase,
+                          vehicle_size: operatorVehicle,
+                          from_location: surveyTrips[surveyStep].from,
+                          to_location: surveyTrips[surveyStep].to,
+                          passengers: surveyTrips[surveyStep].pax,
+                          trip_type: surveyTrips[surveyStep].type,
+                          quoted_price: parseInt(surveyInput)
+                        });
+                      } catch(e) { console.log("Survey save error:", e); }
                       if (surveyStep + 1 < surveyTrips.length) {
                         setSurveyStep(surveyStep + 1);
                       } else {
@@ -479,25 +497,25 @@ export default function App() {
                 </div>
               </>
             )}
- 
+
           </div>
         </div>
       ) : null}
- 
+
       {/* Survey thank you banner */}
       {surveyDone && (
         <div style={{ background:"#16a34a22", border:"1px solid #16a34a55", borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#4ade80", textAlign:"center" }}>
           Thank you! Your pricing data helps make PricePilot more accurate for everyone.
         </div>
       )}
- 
+
       {/* ── Form ── */}
       <div style={C}>
         <Lbl>Pickup location</Lbl>
         <input style={I} placeholder="e.g. Peckham SE15, London" value={from} onChange={e => setFrom(e.target.value)} />
         <Lbl>Dropoff location</Lbl>
         <input style={I} placeholder="e.g. Manchester Piccadilly" value={to} onChange={e => setTo(e.target.value)} />
- 
+
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
           <div><Lbl>Passengers</Lbl>
             <input style={I} type="number" min="1" max="70" placeholder="e.g. 16" value={pax} onChange={e => setPax(e.target.value)} />
@@ -516,7 +534,7 @@ export default function App() {
             <input style={I} type="time" value={time} onChange={e => setTime(e.target.value)} />
           </div>
         </div>
- 
+
         {(trip === "return" || trip === "return-different") && (
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginTop:4 }}>
             <div><Lbl>Return date</Lbl>
@@ -527,16 +545,16 @@ export default function App() {
             </div>
           </div>
         )}
- 
+
         <div style={{ marginTop:12 }}>
           <Lbl>Miles — optional (enter if you know the exact distance)</Lbl>
           <input style={I} type="number" placeholder="e.g. 200 for London to Manchester" value={manualMiles} onChange={e => setManualMiles(e.target.value)} />
           <div style={{ fontSize:11, color:"#484f58", marginTop:3 }}>Leave blank and the AI will estimate.</div>
         </div>
- 
+
         {season     && <Alert color="#f59e0b">{season}</Alert>}
         {congestion && <Alert color="#f87171">London route detected — remember Congestion Charge / ULEZ if applicable.</Alert>}
- 
+
         {similarJobs.length > 0 && (
           <div style={{ marginTop:10, padding:"10px 12px", background:"#1f6feb11", border:"1px solid #1f6feb44", borderRadius:7 }}>
             <div style={{ color:"#60a5fa", fontWeight:700, fontSize:12, marginBottom:6 }}>Your similar past jobs:</div>
@@ -547,28 +565,28 @@ export default function App() {
             ))}
           </div>
         )}
- 
+
         {error && <Alert color="#f85149">{error}</Alert>}
- 
+
         <button onClick={() => getPrice("normal")} disabled={loading}
           style={{ width:"100%", marginTop:16, padding:13, background:loading?"#333":"#f59e0b", border:"none", borderRadius:8, fontSize:15, fontWeight:700, color:loading?"#777":"#000", cursor:loading?"not-allowed":"pointer" }}>
           {loading ? "Calculating..." : "Get Price"}
         </button>
       </div>
- 
+
       {/* ── Result ── */}
       {result && (
         <div style={C}>
- 
+
           {/* New / Regular toggle */}
           <div style={{ display:"flex", gap:8, marginBottom:16 }}>
             <button onClick={() => setIsReg(false)} style={{ flex:1, padding:8, borderRadius:7, border:"none", fontWeight:700, fontSize:13, cursor:"pointer", background:!isReg?"#f59e0b":"#21262d", color:!isReg?"#000":"#7d8590" }}>New Customer</button>
             <button onClick={() => setIsReg(true)}  style={{ flex:1, padding:8, borderRadius:7, border:"none", fontWeight:700, fontSize:13, cursor:"pointer", background:isReg?"#7c3aed":"#21262d",  color:isReg?"#fff":"#7d8590"  }}>Regular (10% off)</button>
           </div>
- 
+
           {/* ── Two price display ── */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
- 
+
             {/* Market price */}
             <div style={{ background:"#0d1117", borderRadius:8, padding:14 }}>
               <div style={{ fontSize:10, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>Market Average</div>
@@ -585,7 +603,7 @@ export default function App() {
                 </>
               )}
             </div>
- 
+
             {/* Your historical price */}
             <div style={{ background:"#0d1117", borderRadius:8, padding:14 }}>
               <div style={{ fontSize:10, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>Your Average</div>
@@ -602,7 +620,7 @@ export default function App() {
               )}
             </div>
           </div>
- 
+
           {/* AI suggested price */}
           <div style={{ fontSize:13, color:"#7d8590", marginBottom:4 }}>{isReg ? "Loyalty price (10% off)" : "AI Suggested Quote"}</div>
           <div style={{ fontSize:48, fontWeight:800, color:isReg?"#a78bfa":"#f59e0b", letterSpacing:"-2px", lineHeight:1 }}>
@@ -614,21 +632,21 @@ export default function App() {
           <div style={{ fontSize:13, color:"#7d8590", marginTop:4, marginBottom:16 }}>
             Range: {fmt(result.low)} – {fmt(result.high)}
           </div>
- 
+
           {/* Re-quote buttons */}
           <div style={{ display:"flex", gap:8, marginBottom:16 }}>
             <button onClick={() => getPrice("higher")} disabled={loading} style={{ flex:1, padding:8, background:"#21262d", border:"1px solid #30363d", borderRadius:7, color:"#4ade80", fontWeight:700, fontSize:12, cursor:"pointer" }}>Quote Higher</button>
             <button onClick={() => getPrice("normal")} disabled={loading} style={{ flex:1, padding:8, background:"#21262d", border:"1px solid #30363d", borderRadius:7, color:"#7d8590", fontWeight:700, fontSize:12, cursor:"pointer" }}>Refresh</button>
             <button onClick={() => getPrice("lower")}  disabled={loading} style={{ flex:1, padding:8, background:"#21262d", border:"1px solid #30363d", borderRadius:7, color:"#f87171", fontWeight:700, fontSize:12, cursor:"pointer" }}>Quote Lower</button>
           </div>
- 
+
           {/* Chips */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:16 }}>
             <Chip label="VEHICLE"    value={result.vehicle} />
             <Chip label="TOTAL MILES" value={totalMiles + " mi"} subtitle={milesSource + " (" + oneWayMiles + " mi each way)"} />
             <Chip label="PER PERSON" value={"~" + fmt(perPerson)} color="#a78bfa" />
           </div>
- 
+
           {/* Cost breakdown */}
           <div style={{ background:"#0d1117", borderRadius:8, padding:14, marginBottom:16 }}>
             <div style={{ fontSize:11, fontWeight:700, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:10 }}>Operator Cost Estimate</div>
@@ -640,25 +658,25 @@ export default function App() {
               <span>Est. margin</span><span>{fmt(margin)} ({marginPct}%)</span>
             </div>
           </div>
- 
+
           {result.notes && (
             <div style={{ background:"#0d1117", borderRadius:7, padding:"10px 12px", fontSize:13, color:"#8d96a0", lineHeight:1.5, marginBottom:10 }}>
               {result.notes}
             </div>
           )}
- 
+
           {trip === "return-different" && oneWayMiles > 100 && (
             <div style={{ marginBottom:16, padding:"10px 12px", background:"#f59e0b11", border:"1px solid #f59e0b44", borderRadius:7, fontSize:12, color:"#f59e0b" }}>
               Long distance overnight trip — driver accommodation and meals not included above. Factor in separately if required (typically £80-£150 per night).
             </div>
           )}
- 
+
           {/* WhatsApp button */}
           <button onClick={copyWA}
             style={{ width:"100%", padding:11, background:copied?"#16a34a":"#25D366", border:"none", borderRadius:8, color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer", marginBottom:16 }}>
             {copied ? "Copied! Paste into WhatsApp" : "Copy WhatsApp Quote Message"}
           </button>
- 
+
           {/* Job logger */}
           <div style={{ borderTop:"1px solid #21262d", paddingTop:16 }}>
             {!logged ? (
@@ -681,13 +699,13 @@ export default function App() {
               </div>
             )}
           </div>
- 
+
           <div style={{ fontSize:11, color:"#484f58", marginTop:14, textAlign:"center" }}>
             AI suggestion only — use your own judgement before quoting.
           </div>
         </div>
       )}
- 
+
       {/* ── Job Log ── */}
       {jobs.length > 0 && (
         <div style={C}>
@@ -716,18 +734,18 @@ export default function App() {
           })}
         </div>
       )}
- 
+
     </div>
     </div>
   );
 }
- 
+
 // ─── Components ───────────────────────────────────────────────────────────────
 const Lbl   = ({ children }) => <label style={{ display:"block", fontSize:11, fontWeight:600, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.4px", marginBottom:5, marginTop:12 }}>{children}</label>;
 const Chip  = ({ label, value, color, subtitle }) => <div style={{ background:"#21262d", borderRadius:7, padding:"8px 10px" }}><div style={{ fontSize:10, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.4px", marginBottom:2 }}>{label}</div><div style={{ fontWeight:700, color:color||"#f0f6fc", fontSize:13 }}>{value}</div>{subtitle && <div style={{ fontSize:9, color:"#484f58", marginTop:1 }}>{subtitle}</div>}</div>;
 const BRow  = ({ label, value, highlight }) => <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, padding:"5px 0", borderBottom:"1px solid #21262d", color:highlight?"#f59e0b":"#8d96a0" }}><span>{label}</span><span>{value}</span></div>;
 const Alert = ({ children, color }) => <div style={{ marginTop:10, padding:"10px 12px", background:color+"11", border:"1px solid "+color+"44", borderRadius:7, color:color, fontSize:13 }}>{children}</div>;
- 
+
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const I = { width:"100%", background:"#0d1117", border:"1px solid #30363d", borderRadius:7, padding:"10px 12px", color:"#e6edf3", fontSize:14, outline:"none", boxSizing:"border-box" };
 const C = { background:"#161b22", border:"1px solid #21262d", borderRadius:12, padding:22, marginBottom:16 };
