@@ -12,7 +12,7 @@ const FUEL_PER_LITRE = 1.75;  // current diesel price per litre
 const MILES_PER_LITRE = 6;    // realistic for loaded minibus
 const RUNNING_UPLIFT  = 1.25; // 25% uplift for wear, tyres, maintenance
 const FUEL_PER_MILE   = (FUEL_PER_LITRE / MILES_PER_LITRE) * RUNNING_UPLIFT; // ~36p per mile
-const API_KEY        = "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";
+const API_KEY = process.env.REACT_APP_API_KEY;
 
 // ─── Survey Questions ────────────────────────────────────────────────────────
 const VEHICLE_SIZES = ["8-seater","12-seater","16-seater","24-seater","32-seater","49-seater"];
@@ -468,7 +468,7 @@ export default function App() {
 
                 <div style={{ display:"flex", gap:10 }}>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (!surveyInput) return;
                       const updated = [...surveyAnswers, { ...surveyTrips[surveyStep], price: parseInt(surveyInput) }];
                       setSurveyAnswers(updated);
