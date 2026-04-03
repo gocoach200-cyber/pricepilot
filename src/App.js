@@ -304,15 +304,20 @@ export default function App() {
   const getPrice = async (variation) => {
     if (!from || !to || !pax || !date) { setError("Please fill in pickup, dropoff, passengers and date."); return; }
     setError(""); setResult(null); setLogged(false); setAltPrice(""); setIsReg(false); setLoading(true);
-    try { setResult(await callAPI(variation || "normal")); }
+    try {
+      const res = await callAPI(variation || "normal");
+      setResult(res);
+      try { await supabase.from("quotes").insert({ from_location:from, to_location:to, passengers:parseInt(pax), trip_type:trip, ai_price:res.price }); } catch(se) {}
+    }
     catch(e) { setError(e.name === "AbortError" ? "Timed out. Please try again." : "Error: " + e.message); }
     setLoading(false);
   };
 
-  const logJob = (outcome) => {
+  const logJob = async (outcome) => {
     const actual = outcome === "different" && altPrice ? parseInt(altPrice) : result.price;
     setJobs(prev => [{ id:Date.now(), from, to, pax, trip, date, aiPrice:result.price, actual, outcome }, ...prev]);
     setLogged(true);
+    try { await supabase.from("job_logs").insert({ from_location:from, to_location:to, passengers:parseInt(pax), trip_type:trip, ai_price:result.price, actual_price:actual, outcome }); } catch(se) {}
   };
 
   const copyWA = () => {
