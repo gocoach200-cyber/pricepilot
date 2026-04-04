@@ -196,10 +196,12 @@ const fmt  = (n) => typeof n === "number" ? "£" + Math.round(n).toLocaleString(
 const isBusy = (d) => {
   if (!d) return null;
   const dt = new Date(d), m = dt.getMonth(), day = dt.getDate();
-  if (m === 11 && day >= 20) return "Christmas period — consider pricing higher";
-  if (m === 0  && day <= 3)  return "New Year period — consider pricing higher";
-  if (m === 7)               return "Summer holidays — high demand period";
-  if (m === 3 && day <= 14)  return "Easter period — consider pricing higher";
+  if (m === 11 && day >= 20) return "Christmas period 🎄 — high demand, price 15% higher";
+  if (m === 0  && day <= 3)  return "New Year period — high demand, price higher";
+  if (m === 5)               return "June — peak season 🌞 consider 10% uplift";
+  if (m === 6)               return "July — peak season 🌞 consider 10% uplift";
+  if (m === 7)               return "August — peak season 🌞 high demand, consider 10% uplift";
+  if (m === 3 && day <= 14)  return "Easter period — high demand, price 10% higher";
   return null;
 };
 
@@ -228,13 +230,15 @@ const buildPrompt = (from, to, pax, date, time, trip, retDate, retTime, jobs, va
     ? "\nOperator past jobs: " + jobs.slice(0, 8).map(j => j.from + "->" + j.to + " " + j.pax + "pax=£" + j.actual).join(", ")
     : "";
   return "UK minibus hire pricing expert. Price at UPPER end of market rate.\n" +
+    "PURPOSE PREMIUMS — apply on top of base price: Stag Do +15%, Hen Do +15%, Festival +20%, Night Out +15%, Football +15%, Rugby +15%, Horse Racing +15%, Concert +15%, Corporate/Business +20%, School Prom +15%, Golf Day +10%, Birthday Party +10%. Wedding/Funeral/Airport/Cruise/Day Trip/Educational/Charity/School Trip = standard rate, no premium.\n" +
+    "SEASONAL PREMIUMS: June/July/August = high season add 10%. December = Christmas period add 15%. Easter weekend add 10%.\n" + +
     "Real market data: Birmingham-Manchester 16pax return £583, 30pax return £783. " +
     "Hackney-Luton 23pax return £1194. Manchester-Leeds 30pax return £728, 16pax return £350. " +
     "Reading-Birmingham 30pax return £952. Brixton-Windsor 16pax return £510. " +
     "Peckham-Heathrow 14pax one-way £470. London-Stansted 12pax one-way £275. " +
     "London-Wembley 16pax return £400. London-O2 16pax return £450.\n" +
     "Return same day = driving both ways + full waiting time. Airport transfer different day = two one-way trips, no accommodation.\n\n" +
-    "From: " + from + "\nTo: " + to + "\nPassengers: " + pax +
+    "From: " + from + "\nTo: " + to + "\nPassengers: " + pax + (purpose ? "\nPurpose: " + purpose : "") +
     "\nDate: " + date + " " + time + "\nTrip: " + trip + retLine + milesLine + hist + varLine + "\n\n" +
     'Reply ONLY with JSON:\n{"price":450,"low":420,"high":490,"vehicle":"16-seater","miles":90,"notes":"One sentence."}';
 };
@@ -265,6 +269,10 @@ export default function App() {
   const [altPrice,   setAltPrice]   = useState("");
   const [isReg,      setIsReg]      = useState(false);
   const [copied,     setCopied]     = useState(false);
+  const [purpose,    setPurpose]    = useState("");
+  const [isOwnerDriver, setIsOwnerDriver] = useState(false);
+  const [operatorPrice, setOperatorPrice] = useState("");
+  const [priceFeedback, setPriceFeedback] = useState("");
   const [showSurvey,   setShowSurvey]   = useState(true);
   const [setupDone,    setSetupDone]    = useState(false);
   const [operatorBase, setOperatorBase] = useState("");
@@ -314,10 +322,17 @@ export default function App() {
   };
 
   const logJob = async (outcome) => {
-    const actual = outcome === "different" && altPrice ? parseInt(altPrice) : result.price;
+    const actual = outcome === "unhappy" && operatorPrice ? parseInt(operatorPrice) : result.price;
     setJobs(prev => [{ id:Date.now(), from, to, pax, trip, date, aiPrice:result.price, actual, outcome }, ...prev]);
     setLogged(true);
-    try { await supabase.from("job_logs").insert({ from_location:from, to_location:to, passengers:parseInt(pax), trip_type:trip, ai_price:result.price, actual_price:actual, outcome }); } catch(se) {}
+    try {
+      await supabase.from("job_logs").insert({
+        from_location:from, to_location:to,
+        passengers:parseInt(pax), trip_type:trip,
+        ai_price:result.price, actual_price:actual,
+        outcome, notes: purpose || null
+      });
+    } catch(se) {}
   };
 
   const copyWA = () => {
@@ -370,7 +385,7 @@ export default function App() {
   })();
 
   const MIN_DRIVER_PAY = 60; // minimum 4 hours at £14.50 = £58, rounded to £60
-  const driverCost    = Math.max(MIN_DRIVER_PAY, Math.round(driverHours * DRIVER_RATE));
+  const driverCost    = isOwnerDriver ? 0 : Math.max(MIN_DRIVER_PAY, Math.round(driverHours * DRIVER_RATE));
   const costs         = fuel + driverCost;
   const margin        = displayPrice - costs;
   const marginPct     = displayPrice > 0 ? Math.round((margin / displayPrice) * 100) : 0;
@@ -383,9 +398,36 @@ export default function App() {
     <div style={{ minHeight:"100vh", background:"#0d1117", color:"#e6edf3", fontFamily:"sans-serif", padding:20 }}>
     <div style={{ maxWidth:520, margin:"0 auto" }}>
 
+      {/* ── Header ── */}
       <div style={{ marginBottom:20 }}>
-        <div style={{ fontSize:22, fontWeight:800, color:"#f59e0b" }}>PricePilot</div>
-        <div style={{ fontSize:13, color:"#7d8590" }}>Minibus Operator Pricing Tool</div>
+        <div style={{ fontSize:26, fontWeight:800, color:"#f59e0b", letterSpacing:"-0.5px" }}>PricePilot</div>
+        <div style={{ fontSize:13, color:"#7d8590", marginBottom:12 }}>Minibus & Coach Hire Pricing Tool</div>
+
+        <div style={{ background:"#161b22", border:"1px solid #21262d", borderRadius:10, padding:"14px 16px", marginBottom:4 }}>
+          <div style={{ fontSize:14, color:"#e6edf3", fontWeight:600, marginBottom:6 }}>
+            Get an accurate market-rate price for any minibus or coach job in seconds
+          </div>
+          <div style={{ fontSize:12, color:"#7d8590", marginBottom:12 }}>
+            Built by operators, for operators — powered by real UK market data.
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            <div style={{ fontSize:12, color:"#7d8590", display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ color:"#f59e0b", fontWeight:700 }}>1</span>
+              <span>Enter your route, passengers and trip details</span>
+            </div>
+            <div style={{ fontSize:12, color:"#7d8590", display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ color:"#f59e0b", fontWeight:700 }}>2</span>
+              <span>Get an AI-powered market rate price instantly</span>
+            </div>
+            <div style={{ fontSize:12, color:"#7d8590", display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ color:"#f59e0b", fontWeight:700 }}>3</span>
+              <span>Send your quote to the customer with confidence</span>
+            </div>
+          </div>
+          <div style={{ marginTop:12, paddingTop:10, borderTop:"1px solid #21262d", fontSize:11, color:"#484f58" }}>
+            🔒 All pricing data is anonymous and used only to improve accuracy for the operator community.
+          </div>
+        </div>
       </div>
 
       {/* ── Survey Popup ── */}
@@ -532,6 +574,35 @@ export default function App() {
               <option value="one-way">One Way</option>
             </select>
           </div>
+          <div><Lbl>Trip purpose</Lbl>
+            <select style={I} value={purpose} onChange={e => setPurpose(e.target.value)}>
+              <option value="">General / Not specified</option>
+              <option value="airport">Airport transfer</option>
+              <option value="cruise">Airport / Cruise port transfer</option>
+              <option value="corporate">Business / Corporate</option>
+              <option value="day_trip">Day Trip</option>
+              <option value="wedding">Wedding</option>
+              <option value="funeral">Funeral</option>
+              <option value="stag">Stag Do</option>
+              <option value="hen">Hen Do</option>
+              <option value="birthday">Birthday Party</option>
+              <option value="night_out">Night Out</option>
+              <option value="festival">Festival</option>
+              <option value="football">Football Match</option>
+              <option value="rugby">Rugby Match</option>
+              <option value="horse_racing">Horse Racing</option>
+              <option value="golf">Golf Day</option>
+              <option value="other_sport">Other Sport Event</option>
+              <option value="concert">Concert</option>
+              <option value="theme_park">Theme Park</option>
+              <option value="school_trip">School Trip</option>
+              <option value="school_prom">School Prom</option>
+              <option value="educational">Educational</option>
+              <option value="charity">Charity</option>
+              <option value="holiday">Holiday / Tour</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
           <div><Lbl>Pickup date</Lbl>
             <input style={I} type="date" value={date} onChange={e => setDate(e.target.value)} />
           </div>
@@ -572,6 +643,17 @@ export default function App() {
         )}
 
         {error && <Alert color="#f85149">{error}</Alert>}
+
+        {/* Owner driver toggle */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:12, marginBottom:4 }}>
+          <button
+            onClick={() => setIsOwnerDriver(!isOwnerDriver)}
+            style={{ padding:"6px 14px", background:isOwnerDriver?"#7c3aed":"#21262d", border:"1px solid #30363d", borderRadius:7, color:isOwnerDriver?"#fff":"#7d8590", fontWeight:700, fontSize:12, cursor:"pointer" }}
+          >
+            {isOwnerDriver ? "Owner-Driver ✓" : "Owner-Driver?"}
+          </button>
+          <span style={{ fontSize:12, color:"#484f58" }}>Toggle if you drive yourself — removes driver wage from costs</span>
+        </div>
 
         <button onClick={() => getPrice("normal")} disabled={loading}
           style={{ width:"100%", marginTop:16, padding:13, background:loading?"#333":"#f59e0b", border:"none", borderRadius:8, fontSize:15, fontWeight:700, color:loading?"#777":"#000", cursor:loading?"not-allowed":"pointer" }}>
@@ -682,25 +764,50 @@ export default function App() {
             {copied ? "Copied! Paste into WhatsApp" : "Copy WhatsApp Quote Message"}
           </button>
 
-          {/* Job logger */}
+          {/* Simplified Job Logger */}
           <div style={{ borderTop:"1px solid #21262d", paddingTop:16 }}>
             {!logged ? (
               <>
-                <div style={{ fontSize:13, color:"#7d8590", marginBottom:12 }}>How did this job go?</div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
-                  <button onClick={() => logJob("accepted")}    style={{ padding:10, background:"#16a34a", border:"none", borderRadius:7, color:"#fff",    fontWeight:700, fontSize:13, cursor:"pointer" }}>Accepted</button>
-                  <button onClick={() => logJob("rejected")}    style={{ padding:10, background:"#7f1d1d", border:"none", borderRadius:7, color:"#f87171", fontWeight:700, fontSize:13, cursor:"pointer" }}>Rejected</button>
-                  <button onClick={() => logJob("no_response")} style={{ padding:10, background:"#21262d", border:"1px solid #30363d", borderRadius:7, color:"#7d8590", fontWeight:700, fontSize:13, cursor:"pointer" }}>No Response</button>
-                  <button onClick={() => logJob("different")}   style={{ padding:10, background:"#1e3a5f", border:"none", borderRadius:7, color:"#60a5fa", fontWeight:700, fontSize:13, cursor:"pointer" }}>Quoted Differently</button>
+                <div style={{ fontSize:13, fontWeight:700, color:"#f0f6fc", marginBottom:4 }}>Happy with this price to send to the customer?</div>
+                <div style={{ fontSize:12, color:"#484f58", marginBottom:12 }}>Your feedback helps improve accuracy for everyone.</div>
+                <div style={{ display:"flex", gap:10, marginBottom:12 }}>
+                  <button
+                    onClick={() => { setPriceFeedback("happy"); logJob("happy"); }}
+                    style={{ flex:1, padding:11, background:"#16a34a", border:"none", borderRadius:7, color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer" }}
+                  >
+                    Yes — sending it ✓
+                  </button>
+                  <button
+                    onClick={() => setPriceFeedback("unhappy")}
+                    style={{ flex:1, padding:11, background:"#21262d", border:"1px solid #30363d", borderRadius:7, color:"#f87171", fontWeight:700, fontSize:13, cursor:"pointer" }}
+                  >
+                    No — too high / low
+                  </button>
                 </div>
-                <div style={{ background:"#0d1117", borderRadius:7, padding:"10px 12px", fontSize:12, color:"#7d8590" }}>
-                  If you quoted differently, enter your actual price first:
-                  <input style={{ ...I, marginTop:8 }} type="number" placeholder="e.g. 680" value={altPrice} onChange={e => setAltPrice(e.target.value)} />
-                </div>
+
+                {priceFeedback === "unhappy" && (
+                  <div style={{ background:"#0d1117", borderRadius:8, padding:14, marginBottom:10 }}>
+                    <div style={{ fontSize:13, color:"#f0f6fc", marginBottom:8, fontWeight:600 }}>What would you charge for this job?</div>
+                    <div style={{ fontSize:12, color:"#484f58", marginBottom:10 }}>Your price helps us improve the AI for this route.</div>
+                    <input
+                      style={{ ...I, marginBottom:10, fontSize:16, fontWeight:700 }}
+                      type="number"
+                      placeholder="e.g. 650"
+                      value={operatorPrice}
+                      onChange={e => setOperatorPrice(e.target.value)}
+                    />
+                    <button
+                      onClick={() => { if(operatorPrice) logJob("unhappy"); }}
+                      style={{ width:"100%", padding:10, background:operatorPrice?"#f59e0b":"#333", border:"none", borderRadius:7, color:operatorPrice?"#000":"#777", fontWeight:700, fontSize:13, cursor:"pointer" }}
+                    >
+                      Submit my price
+                    </button>
+                  </div>
+                )}
               </>
             ) : (
               <div style={{ background:"#16a34a22", border:"1px solid #16a34a55", color:"#4ade80", borderRadius:8, padding:12, textAlign:"center", fontSize:14, fontWeight:600 }}>
-                Logged! Your pricing history is building up.
+                Thank you! Your feedback improves pricing for everyone.
               </div>
             )}
           </div>
