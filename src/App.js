@@ -267,7 +267,6 @@ export default function App() {
   const [error,      setError]      = useState("");
   const [jobs,       setJobs]       = useState([]);
   const [logged,     setLogged]     = useState(false);
-  const [altPrice,   setAltPrice]   = useState("");
   const [isReg,      setIsReg]      = useState(false);
   const [copied,     setCopied]     = useState(false);
   const [purpose,    setPurpose]    = useState("");
@@ -312,7 +311,7 @@ export default function App() {
 
   const getPrice = async (variation) => {
     if (!from || !to || !pax || !date) { setError("Please fill in pickup, dropoff, passengers and date."); return; }
-    setError(""); setResult(null); setLogged(false); setAltPrice(""); setIsReg(false); setLoading(true);
+    setError(""); setResult(null); setLogged(false); setIsReg(false); setLoading(true);
     try {
       const res = await callAPI(variation || "normal");
       setResult(res);
