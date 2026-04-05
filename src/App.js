@@ -26,11 +26,16 @@ const UK_CITIES = [
 
 const TRIPS_BY_BASE = {
   "London":       [
-    { from:"Peckham SE15, London",    to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:30" },
+    { from:"Peckham SE15, London",    to:"Heathrow Airport",      type:"One way",         time:"05:00"       },
+    { from:"Brixton SW2, London",     to:"Gatwick Airport",       type:"One way",         time:"06:00"       },
+    { from:"Hackney E8, London",      to:"Luton Airport",         type:"One way",         time:"04:30"       },
+    { from:"Lewisham SE13, London",   to:"Stansted Airport",      type:"One way",         time:"05:00"       },
+    { from:"Central London",          to:"O2 Arena",              type:"Same day return", time:"17:00-23:00" },
+    { from:"Peckham SE15, London",    to:"Wembley Stadium",       type:"Same day return", time:"13:00-19:00" },
+    { from:"Brixton SW2, London",     to:"Brighton City Centre",  type:"Same day return", time:"09:00-18:00" },
     { from:"Central London",          to:"Birmingham City Centre", type:"Same day return", time:"09:00-17:30" },
-    { from:"Brixton, London",         to:"Heathrow Airport",      type:"Return diff day", time:"06:00"       },
-    { from:"Hackney E8, London",      to:"Wembley Stadium",       type:"Same day return", time:"17:00-23:00" },
-    { from:"Central London",          to:"Gatwick Airport",       type:"Return diff day", time:"05:00"       },
+    { from:"Hackney E8, London",      to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:30" },
+    { from:"South London",            to:"Oxford City Centre",    type:"Same day return", time:"09:00-17:00" },
   ],
   "Birmingham":   [
     { from:"Birmingham City Centre",  to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:30" },
@@ -85,9 +90,11 @@ const getPaxFromVehicle = (vehicle) => {
 };
 
 const getSurveyTrips = (base, vehicle) => {
-  const trips = TRIPS_BY_BASE[base] || TRIPS_BY_BASE["default"];
-  const pax   = getPaxFromVehicle(vehicle);
-  return trips.slice(0, 3).map(t => ({ ...t, pax }));
+  const allTrips = TRIPS_BY_BASE[base] || TRIPS_BY_BASE["default"];
+  const pax = getPaxFromVehicle(vehicle);
+  // Randomly select 3 trips from the pool so repeat visitors see different routes
+  const shuffled = [...allTrips].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, 3).map(t => ({ ...t, pax }));
 };
 
 // ─── Real Market Data (collected from UK operators, May 2025) ─────────────────
@@ -104,6 +111,20 @@ const MARKET_DATA = [
   { from:"reading",    to:"birmingham", pax:30, type:"return", avg:952, low:895, high:995 },
   { from:"brixton",    to:"windsor",    pax:16, type:"return", avg:510, low:495, high:525 },
   { from:"peckham",    to:"heathrow",   pax:14, type:"one-way", avg:470, low:420, high:495 },
+  { from:"dartford",   to:"godstone",      pax:50, type:"return",   avg:825,  low:700,  high:900  },
+  { from:"heathrow",   to:"walworth",      pax:12, type:"one-way",  avg:242,  low:200,  high:300  },
+  { from:"heathrow",   to:"walworth",      pax:18, type:"one-way",  avg:461,  low:350,  high:575  },
+  { from:"se12",       to:"o2",            pax:15, type:"return",   avg:312,  low:200,  high:450  },
+  { from:"london",     to:"luton",         pax:13, type:"one-way",  avg:270,  low:200,  high:330  },
+  { from:"london",     to:"gatwick",       pax:16, type:"one-way",  avg:253,  low:190,  high:300  },
+  { from:"dartford",   to:"piccadilly",    pax:13, type:"one-way",  avg:394,  low:356,  high:450  },
+  { from:"bromley",    to:"heathrow",      pax:16, type:"one-way",  avg:280,  low:220,  high:350  },
+  { from:"bromley",    to:"o2",            pax:16, type:"return",   avg:300,  low:240,  high:380  },
+  { from:"dartford",   to:"heathrow",      pax:16, type:"one-way",  avg:290,  low:230,  high:360  },
+  { from:"maidstone",  to:"london",        pax:16, type:"one-way",  avg:350,  low:280,  high:420  },
+  { from:"gravesend",  to:"heathrow",      pax:16, type:"one-way",  avg:310,  low:250,  high:380  },
+  { from:"chatham",    to:"london",        pax:16, type:"one-way",  avg:380,  low:300,  high:450  },
+  { from:"canterbury", to:"london",        pax:16, type:"one-way",  avg:450,  low:380,  high:550  },
 ];
 
 // Known UK road distances (miles, one way)
@@ -147,6 +168,65 @@ const KNOWN_DISTANCES = [
   { from:"reading",    to:"london",     miles:40  },
   { from:"reading",    to:"birmingham", miles:100 },
   { from:"reading",    to:"bristol",    miles:75  },
+  { from:"dartford",   to:"godstone",      miles:45  },
+  { from:"dartford",   to:"piccadilly",    miles:25  },
+  { from:"dartford",   to:"heathrow",      miles:35  },
+  { from:"dartford",   to:"o2",            miles:18  },
+  { from:"dartford",   to:"wembley",       miles:30  },
+  { from:"dartford",   to:"gatwick",       miles:45  },
+  { from:"dartford",   to:"luton",         miles:55  },
+  { from:"dartford",   to:"stansted",      miles:50  },
+  { from:"dartford",   to:"birmingham",    miles:120 },
+  { from:"dartford",   to:"manchester",    miles:220 },
+  { from:"dartford",   to:"brighton",      miles:70  },
+  { from:"dartford",   to:"cambridge",     miles:75  },
+  { from:"bromley",    to:"heathrow",      miles:28  },
+  { from:"bromley",    to:"o2",            miles:14  },
+  { from:"bromley",    to:"wembley",       miles:25  },
+  { from:"bromley",    to:"gatwick",       miles:22  },
+  { from:"bromley",    to:"luton",         miles:48  },
+  { from:"bromley",    to:"stansted",      miles:45  },
+  { from:"bromley",    to:"birmingham",    miles:115 },
+  { from:"bromley",    to:"manchester",    miles:215 },
+  { from:"bromley",    to:"brighton",      miles:50  },
+  { from:"maidstone",  to:"london",        miles:35  },
+  { from:"maidstone",  to:"heathrow",      miles:55  },
+  { from:"maidstone",  to:"gatwick",       miles:35  },
+  { from:"maidstone",  to:"wembley",       miles:50  },
+  { from:"gravesend",  to:"london",        miles:25  },
+  { from:"gravesend",  to:"heathrow",      miles:40  },
+  { from:"chatham",    to:"london",        miles:35  },
+  { from:"chatham",    to:"heathrow",      miles:55  },
+  { from:"chatham",    to:"wembley",       miles:50  },
+  { from:"canterbury", to:"london",        miles:60  },
+  { from:"canterbury", to:"heathrow",      miles:80  },
+  { from:"sevenoaks",  to:"london",        miles:25  },
+  { from:"sevenoaks",  to:"heathrow",      miles:30  },
+  { from:"tunbridge",  to:"london",        miles:35  },
+  { from:"tunbridge",  to:"heathrow",      miles:50  },
+  { from:"folkestone", to:"london",        miles:75  },
+  { from:"dover",      to:"london",        miles:80  },
+  { from:"dover",      to:"heathrow",      miles:95  },
+  { from:"ashford",    to:"london",        miles:60  },
+  { from:"ashford",    to:"heathrow",      miles:75  },
+  { from:"aylesbury",  to:"london",        miles:45  },
+  { from:"aylesbury",  to:"heathrow",      miles:35  },
+  { from:"aylesbury",  to:"wembley",       miles:40  },
+  { from:"oxford",     to:"heathrow",      miles:45  },
+  { from:"oxford",     to:"wembley",       miles:55  },
+  { from:"oxford",     to:"birmingham",    miles:65  },
+  { from:"highwycombe",to:"london",        miles:30  },
+  { from:"highwycombe",to:"heathrow",      miles:20  },
+  { from:"eltham",     to:"o2",            miles:5   },
+  { from:"eltham",     to:"wembley",       miles:20  },
+  { from:"lewisham",   to:"wembley",       miles:18  },
+  { from:"greenwich",  to:"heathrow",      miles:22  },
+  { from:"woolwich",   to:"heathrow",      miles:20  },
+  { from:"sidcup",     to:"heathrow",      miles:25  },
+  { from:"bexleyheath",to:"heathrow",      miles:25  },
+  { from:"bexley",     to:"heathrow",      miles:25  },
+  { from:"erith",      to:"heathrow",      miles:28  },
+  { from:"thamesmead", to:"heathrow",      miles:22  },
 ];
 
 const findKnownDistance = (from, to) => {
@@ -194,6 +274,60 @@ const findMarketPrice = (from, to, pax, type) => {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt  = (n) => typeof n === "number" ? "£" + Math.round(n).toLocaleString("en-GB") : n;
 
+// UK Events Calendar - dates that affect demand
+const UK_EVENTS = [
+  { month:0,  day:1,  name:"New Year's Day", advice:"Price higher — very high demand", uplift:20 },
+  { month:2,  day:14, name:"Cheltenham Festival", advice:"Price higher near Cheltenham — race day surge", uplift:15 },
+  { month:3,  day:4,  name:"Grand National", advice:"Price higher near Liverpool — race day surge", uplift:15 },
+  { month:4,  day:25, name:"FA Cup Final", advice:"Price higher for Wembley jobs — FA Cup Final", uplift:15 },
+  { month:5,  day:20, name:"Glastonbury Festival", advice:"Price higher for Somerset/Bristol routes — Glastonbury", uplift:20 },
+  { month:6,  day:1,  name:"Wimbledon", advice:"Price higher for SW London — Wimbledon fortnight", uplift:15 },
+  { month:7,  day:23, name:"Notting Hill Carnival", advice:"Price higher for West London — Notting Hill Carnival weekend", uplift:20 },
+  { month:10, day:5,  name:"Bonfire Night", advice:"Evening jobs price higher — Bonfire Night demand", uplift:10 },
+  { month:11, day:20, name:"Christmas Period", advice:"Price higher — Christmas party season peak", uplift:15 },
+  { month:11, day:31, name:"New Year's Eve", advice:"Price significantly higher — New Year's Eve, highest demand night of year", uplift:25 },
+];
+
+const getEventAlert = (dateStr) => {
+  if (!dateStr) return null;
+  const dt = new Date(dateStr);
+  const m = dt.getMonth(), d = dt.getDate();
+  for (const ev of UK_EVENTS) {
+    if (ev.month === m && Math.abs(ev.day - d) <= 2) {
+      return { name: ev.name, advice: ev.advice, uplift: ev.uplift };
+    }
+  }
+  return null;
+};
+
+const getDayAdvice = (dateStr) => {
+  if (!dateStr) return null;
+  const day = new Date(dateStr).getDay(); // 0=Sun, 5=Fri, 6=Sat
+  if (day === 5) return { advice: "Friday — popular booking day, consider pricing 5-10% higher", type: "peak" };
+  if (day === 6) return { advice: "Saturday — highest demand day of the week, price confidently", type: "peak" };
+  if (day === 0) return { advice: "Sunday — popular for day trips and events, good demand", type: "peak" };
+  if (day === 1) return { advice: "Monday — quieter day, consider competitive pricing to secure the booking", type: "quiet" };
+  if (day === 2) return { advice: "Tuesday — quieter mid-week, competitive pricing recommended", type: "quiet" };
+  if (day === 3) return { advice: "Wednesday — mid-week, standard pricing", type: "normal" };
+  if (day === 4) return { advice: "Thursday — demand picks up towards weekend, standard pricing", type: "normal" };
+  return null;
+};
+
+const getMonthAdvice = (dateStr) => {
+  if (!dateStr) return null;
+  const m = new Date(dateStr).getMonth();
+  if (m === 0)  return { advice: "January — very quiet period. Consider pricing 10-15% lower to secure bookings.", type: "quiet" };
+  if (m === 1)  return { advice: "February — quiet month. Competitive pricing recommended to win jobs.", type: "quiet" };
+  if (m === 4)  return { advice: "May — bank holidays and wedding season starting. Good demand.", type: "peak" };
+  if (m === 5)  return { advice: "June — peak summer season. Price confidently, demand is high.", type: "peak" };
+  if (m === 6)  return { advice: "July — peak summer season. High demand, price at upper end.", type: "peak" };
+  if (m === 7)  return { advice: "August — peak season. Highest demand of the year, price accordingly.", type: "peak" };
+  if (m === 8)  return { advice: "September — post-summer slowdown. Monitor demand carefully.", type: "normal" };
+  if (m === 10) return { advice: "November — quieter period. Consider competitive pricing to secure bookings.", type: "quiet" };
+  if (m === 11) return { advice: "December — Christmas party season. Very high demand, price higher.", type: "peak" };
+  return null;
+};
+
 const isBusy = (d) => {
   if (!d) return null;
   const dt = new Date(d), m = dt.getMonth(), day = dt.getDate();
@@ -233,7 +367,7 @@ const buildPrompt = (from, to, pax, date, time, trip, retDate, retTime, jobs, va
   return "UK minibus hire pricing expert. Price at UPPER end of market rate.\n" +
     "PURPOSE PREMIUMS — apply on top of base price: Stag Do +15%, Hen Do +15%, Festival +20%, Night Out +15%, Football +15%, Rugby +15%, Horse Racing +15%, Concert +15%, Corporate/Business +20%, School Prom +15%, Golf Day +10%, Birthday Party +10%. Wedding/Funeral/Airport/Cruise/Day Trip/Educational/Charity/School Trip = standard rate, no premium.\n" +
     "SEASONAL PREMIUMS: June/July/August = high season add 10%. December = Christmas period add 15%. Easter weekend add 10%.\n" + +
-    "Real market data: Birmingham-Manchester 16pax return £583, 30pax return £783. " +
+    "Real market data: Dartford-Godstone 50pax return avg £825 (£700-£900). Heathrow-Walworth 12pax one-way avg £242. Heathrow-Walworth 18pax one-way avg £461. SE12-O2 15pax return avg £312. London-Luton 13pax one-way avg £270. London-Gatwick 16pax one-way avg £253. Dartford-Piccadilly 13pax one-way avg £394. Bromley-Heathrow 16pax one-way avg £280. Maidstone-London 16pax one-way avg £350. Canterbury-London 16pax one-way avg £450. Birmingham-Manchester 16pax return £583, 30pax return £783. " +
     "Hackney-Luton 23pax return £1194. Manchester-Leeds 30pax return £728, 16pax return £350. " +
     "Reading-Birmingham 30pax return £952. Brixton-Windsor 16pax return £510. " +
     "Peckham-Heathrow 14pax one-way £470. London-Stansted 12pax one-way £275. " +
@@ -269,6 +403,9 @@ export default function App() {
   const [logged,     setLogged]     = useState(false);
   const [isReg,      setIsReg]      = useState(false);
   const [copied,     setCopied]     = useState(false);
+  const [eventAlert,  setEventAlert]  = useState(null);
+  const [dayAdvice,   setDayAdvice]   = useState(null);
+  const [monthAdvice, setMonthAdvice] = useState(null);
   const [purpose,    setPurpose]    = useState("");
   const [isOwnerDriver, setIsOwnerDriver] = useState(false);
   const [operatorPrice, setOperatorPrice] = useState("");
@@ -604,7 +741,12 @@ export default function App() {
             </select>
           </div>
           <div><Lbl>Pickup date</Lbl>
-            <input style={I} type="date" value={date} onChange={e => setDate(e.target.value)} />
+            <input style={I} type="date" value={date} onChange={e => {
+              setDate(e.target.value);
+              setEventAlert(getEventAlert(e.target.value));
+              setDayAdvice(getDayAdvice(e.target.value));
+              setMonthAdvice(getMonthAdvice(e.target.value));
+            }} />
           </div>
           <div><Lbl>Pickup time</Lbl>
             <input style={I} type="time" value={time} onChange={e => setTime(e.target.value)} />
@@ -628,6 +770,22 @@ export default function App() {
           <div style={{ fontSize:11, color:"#484f58", marginTop:3 }}>Leave blank and the AI will estimate.</div>
         </div>
 
+        {eventAlert && (
+          <div style={{ marginTop:10, padding:"12px 14px", background:"#7c3aed22", border:"1px solid #7c3aed55", borderRadius:7 }}>
+            <div style={{ color:"#a78bfa", fontWeight:700, fontSize:12, marginBottom:2 }}>{eventAlert.name} nearby</div>
+            <div style={{ color:"#c4b5fd", fontSize:12 }}>{eventAlert.advice}</div>
+          </div>
+        )}
+        {dayAdvice && (
+          <div style={{ marginTop:8, padding:"10px 14px", background: dayAdvice.type==="peak" ? "#16a34a22" : dayAdvice.type==="quiet" ? "#f59e0b22" : "#21262d", border: "1px solid " + (dayAdvice.type==="peak" ? "#16a34a55" : dayAdvice.type==="quiet" ? "#f59e0b55" : "#30363d"), borderRadius:7 }}>
+            <div style={{ color: dayAdvice.type==="peak" ? "#4ade80" : dayAdvice.type==="quiet" ? "#f59e0b" : "#7d8590", fontSize:12 }}>{dayAdvice.advice}</div>
+          </div>
+        )}
+        {monthAdvice && (
+          <div style={{ marginTop:8, padding:"10px 14px", background: monthAdvice.type==="peak" ? "#16a34a22" : monthAdvice.type==="quiet" ? "#ef444422" : "#21262d", border: "1px solid " + (monthAdvice.type==="peak" ? "#16a34a55" : monthAdvice.type==="quiet" ? "#ef444455" : "#30363d"), borderRadius:7 }}>
+            <div style={{ color: monthAdvice.type==="peak" ? "#4ade80" : monthAdvice.type==="quiet" ? "#f87171" : "#7d8590", fontSize:12 }}>{monthAdvice.advice}</div>
+          </div>
+        )}
         {season     && <Alert color="#f59e0b">{season}</Alert>}
         {congestion && <Alert color="#f87171">London route detected — remember Congestion Charge / ULEZ if applicable.</Alert>}
 
