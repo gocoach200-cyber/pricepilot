@@ -404,6 +404,14 @@ export default function App() {
   const [isReg,      setIsReg]      = useState(false);
   const [copied,     setCopied]     = useState(false);
   const [eventAlert,  setEventAlert]  = useState(null);
+  const [shareMsg,    setShareMsg]    = useState("");
+  const [quoteId,     setQuoteId]     = useState(null);
+  const [quoteCopied, setQuoteCopied] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [shareMsg,    setShareMsg]    = useState("");
+  const [quoteCopied, setQuoteCopied] = useState(false);
+  const [shareLink,   setShareLink]   = useState("");
+  const [linkCopied,  setLinkCopied]  = useState(false);
   const [dayAdvice,   setDayAdvice]   = useState(null);
   const [monthAdvice, setMonthAdvice] = useState(null);
   const [purpose,    setPurpose]    = useState("");
@@ -475,6 +483,53 @@ export default function App() {
   const copyWA = () => {
     navigator.clipboard.writeText(waMsg(from, to, pax, date, displayPrice, result.vehicle));
     setCopied(true); setTimeout(() => setCopied(false), 2500);
+  };
+
+  const copyShareApp = () => {
+    const msg = "Hi, found this free pricing tool for minibus and coach operators — gives you an instant market rate price for any job. Really useful for quoting. Worth trying: https://pricepilot-eight.vercel.app";
+    navigator.clipboard.writeText(msg);
+    setShareCopied(true); setTimeout(() => setShareCopied(false), 2500);
+  };
+
+  const copyQuoteLink = () => {
+    if (!quoteId) return;
+    const link = "https://pricepilot-eight.vercel.app?quote=" + quoteId + "&from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to) + "&pax=" + pax + "&price=" + displayPrice + "&vehicle=" + encodeURIComponent(result.vehicle || "");
+    const msg = "Hi, I used PricePilot to price this job — " + from + " to " + to + ", " + pax + " passengers. Market rate: " + fmt(displayPrice) + ". Check it out: " + link;
+    navigator.clipboard.writeText(msg);
+    setQuoteCopied(true); setTimeout(() => setQuoteCopied(false), 2500);
+  };
+
+  const shareApp = () => {
+    const msg = "Hi, found this free pricing tool for minibus and coach operators. Gives you an instant market rate price for any job — really useful for quoting. Worth trying: pricepilot-eight.vercel.app";
+    navigator.clipboard.writeText(msg);
+    setShareMsg("Copied! Paste into WhatsApp and send to other operators.");
+    setTimeout(() => setShareMsg(""), 3000);
+  };
+
+  const shareQuote = async () => {
+    if (!result) return;
+    try {
+      const { data, error } = await supabase.from("quotes").insert({
+        from_location: from, to_location: to,
+        passengers: parseInt(pax), trip_type: trip,
+        ai_price: displayPrice
+      }).select();
+      if (data && data[0]) {
+        const link = window.location.origin + "?quote=" + data[0].id;
+        setShareLink(link);
+        navigator.clipboard.writeText(
+          "Hi, I have a job I need cover for. Here are the details and a suggested price — let me know if you can help: " + link
+        );
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 3000);
+      }
+    } catch(e) {
+      // Fallback - just copy the details as text
+      const msg = "Job details: " + from + " to " + to + " | " + pax + " passengers | " + trip + " | Suggested price: " + fmt(displayPrice);
+      navigator.clipboard.writeText(msg);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 3000);
+    }
   };
 
   // ── Derived values ──
@@ -566,6 +621,38 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* ── Shared Quote Banner ── */}
+      {(() => {
+        const params = new URLSearchParams(window.location.search);
+        const sharedFrom = params.get("from");
+        const sharedTo = params.get("to");
+        const sharedPax = params.get("pax");
+        const sharedPrice = params.get("price");
+        const sharedVehicle = params.get("vehicle");
+        if (!sharedFrom || !sharedTo || !sharedPrice) return null;
+        return (
+          <div style={{ background:"#1e3a5f", border:"1px solid #2563eb44", borderRadius:12, padding:20, marginBottom:16 }}>
+            <div style={{ fontSize:11, color:"#60a5fa", textTransform:"uppercase", letterSpacing:"1px", marginBottom:8, fontWeight:700 }}>Shared Quote</div>
+            <div style={{ fontSize:15, fontWeight:700, color:"#f0f6fc", marginBottom:6 }}>
+              {sharedFrom} <span style={{ color:"#484f58" }}>→</span> {sharedTo}
+            </div>
+            <div style={{ fontSize:13, color:"#7d8590", marginBottom:12 }}>
+              {sharedPax} passengers · {sharedVehicle}
+            </div>
+            <div style={{ fontSize:32, fontWeight:800, color:"#60a5fa", letterSpacing:"-1px", marginBottom:8 }}>
+              {fmt(parseInt(sharedPrice))}
+            </div>
+            <div style={{ fontSize:12, color:"#484f58", marginBottom:12 }}>Market rate price generated by PricePilot</div>
+            <button
+              onClick={() => { setFrom(sharedFrom); setTo(sharedTo); setPax(sharedPax); }}
+              style={{ padding:"10px 16px", background:"#2563eb", border:"none", borderRadius:7, color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer" }}
+            >
+              Get my own price for this job
+            </button>
+          </div>
+        );
+      })()}
 
       {/* ── Survey Popup ── */}
       {(showSurvey === true && surveyDone === false) ? (
@@ -973,6 +1060,21 @@ export default function App() {
           <div style={{ fontSize:11, color:"#484f58", marginTop:14, textAlign:"center" }}>
             AI suggestion only — use your own judgement before quoting.
           </div>
+
+          {/* Share buttons */}
+          <div style={{ borderTop:"1px solid #21262d", paddingTop:16, marginTop:16 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:"#f0f6fc", marginBottom:4 }}>Share this quote</div>
+            <div style={{ fontSize:12, color:"#484f58", marginBottom:12 }}>Send this job price directly to another operator</div>
+            <button onClick={copyQuoteLink}
+              style={{ width:"100%", padding:11, background:quoteCopied?"#16a34a":"#1e3a5f", border:"1px solid #2563eb44", borderRadius:8, color:quoteCopied?"#fff":"#60a5fa", fontWeight:700, fontSize:13, cursor:"pointer", marginBottom:8 }}>
+              {quoteCopied ? "Copied! Paste into WhatsApp" : "Share this quote with an operator"}
+            </button>
+            <div style={{ fontSize:12, color:"#484f58", marginBottom:12, marginTop:4, textAlign:"center" }}>or</div>
+            <button onClick={copyShareApp}
+              style={{ width:"100%", padding:11, background:shareCopied?"#16a34a":"#21262d", border:"1px solid #30363d", borderRadius:8, color:shareCopied?"#fff":"#7d8590", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+              {shareCopied ? "Copied! Paste into WhatsApp" : "Recommend PricePilot to another operator"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -1004,6 +1106,26 @@ export default function App() {
           })}
         </div>
       )}
+
+    {/* Share PricePilot */}
+    <div style={{ background:"#161b22", border:"1px solid #21262d", borderRadius:12, padding:20, marginBottom:16, textAlign:"center" }}>
+      <div style={{ fontSize:13, fontWeight:700, color:"#f0f6fc", marginBottom:6 }}>Know another operator who'd find this useful?</div>
+      <div style={{ fontSize:12, color:"#7d8590", marginBottom:14 }}>The more operators who use PricePilot, the more accurate the pricing becomes for everyone.</div>
+      <button onClick={shareApp}
+        style={{ width:"100%", padding:12, background:"#f59e0b", border:"none", borderRadius:8, color:"#000", fontWeight:700, fontSize:14, cursor:"pointer" }}>
+        {shareMsg ? shareMsg : "Share PricePilot with Other Operators"}
+      </button>
+    </div>
+
+      {/* ── Share PricePilot Footer ── */}
+      <div style={{ background:"#161b22", border:"1px solid #21262d", borderRadius:12, padding:20, marginBottom:16, textAlign:"center" }}>
+        <div style={{ fontSize:14, fontWeight:700, color:"#f0f6fc", marginBottom:4 }}>Know another operator?</div>
+        <div style={{ fontSize:12, color:"#7d8590", marginBottom:12 }}>Share PricePilot — the more operators who use it, the more accurate the pricing becomes for everyone.</div>
+        <button onClick={copyShareApp}
+          style={{ padding:"10px 20px", background:shareCopied?"#16a34a":"#f59e0b", border:"none", borderRadius:8, color:shareCopied?"#fff":"#000", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+          {shareCopied ? "Copied! Paste into WhatsApp" : "Share with another operator"}
+        </button>
+      </div>
 
     </div>
     </div>
