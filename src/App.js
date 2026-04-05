@@ -1061,4 +1061,4 @@ export default function App() {
 
           {/* Share buttons */}
           <div style={{ borderTop:"1px solid #21262d", paddingTop:16, marginTop:16 }}>
-            <div
+            <div style={{ fontS
