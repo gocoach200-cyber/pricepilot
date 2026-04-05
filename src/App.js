@@ -1,4 +1,5 @@
 // PricePilot v4 - April 2026
+/* eslint-disable */
 import { useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
@@ -1061,4 +1062,71 @@ export default function App() {
 
           {/* Share buttons */}
           <div style={{ borderTop:"1px solid #21262d", paddingTop:16, marginTop:16 }}>
-            <div style={{ fontS
+            <div style={{ fontSize:13, fontWeight:700, color:"#f0f6fc", marginBottom:4 }}>Share this quote</div>
+            <div style={{ fontSize:12, color:"#484f58", marginBottom:12 }}>Send this job price directly to another operator</div>
+            <button onClick={copyQuoteLink}
+              style={{ width:"100%", padding:11, background:quoteCopied?"#16a34a":"#1e3a5f", border:"1px solid #2563eb44", borderRadius:8, color:quoteCopied?"#fff":"#60a5fa", fontWeight:700, fontSize:13, cursor:"pointer", marginBottom:8 }}>
+              {quoteCopied ? "Copied! Paste into WhatsApp" : "Share this quote with an operator"}
+            </button>
+            <div style={{ fontSize:12, color:"#484f58", marginBottom:12, marginTop:4, textAlign:"center" }}>or</div>
+            <button onClick={copyShareApp}
+              style={{ width:"100%", padding:11, background:shareCopied?"#16a34a":"#21262d", border:"1px solid #30363d", borderRadius:8, color:shareCopied?"#fff":"#7d8590", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+              {shareCopied ? "Copied! Paste into WhatsApp" : "Recommend PricePilot to another operator"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Job Log ── */}
+      {jobs.length > 0 && (
+        <div style={C}>
+          <div style={{ fontSize:13, fontWeight:700, color:"#f0f6fc", marginBottom:14 }}>Job Log</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:14 }}>
+            <Chip label="TOTAL"      value={jobs.length} />
+            <Chip label="ACCEPTED"   value={accepted} color="#4ade80" />
+            <Chip label="AVG QUOTED" value={fmt(avgP)} color="#f59e0b" />
+          </div>
+          {jobs.map(j => {
+            const t = TAGS[j.outcome] || TAGS.different;
+            return (
+              <div key={j.id} style={{ background:"#0d1117", borderRadius:8, padding:"12px 14px", marginBottom:8 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                  <div style={{ fontWeight:600, color:"#f0f6fc", fontSize:13 }}>{j.from} to {j.to}</div>
+                  <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:20, background:t.bg, color:t.color, border:t.border }}>{t.label}</span>
+                </div>
+                <div style={{ fontSize:12, color:"#7d8590" }}>
+                  {j.pax} pax · {j.trip} · {j.date} · <span style={{ color:"#f59e0b", fontWeight:700 }}>{fmt(j.actual)}</span>
+                  {j.outcome === "different" && j.actual !== j.aiPrice && (
+                    <span style={{ color:"#60a5fa", marginLeft:6 }}>(AI: {fmt(j.aiPrice)})</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Share PricePilot Footer ── */}
+      <div style={{ background:"#161b22", border:"1px solid #21262d", borderRadius:12, padding:20, marginBottom:16, textAlign:"center" }}>
+        <div style={{ fontSize:14, fontWeight:700, color:"#f0f6fc", marginBottom:4 }}>Know another operator?</div>
+        <div style={{ fontSize:12, color:"#7d8590", marginBottom:12 }}>Share PricePilot — the more operators who use it, the more accurate the pricing becomes for everyone.</div>
+        <button onClick={copyShareApp}
+          style={{ padding:"10px 20px", background:shareCopied?"#16a34a":"#f59e0b", border:"none", borderRadius:8, color:shareCopied?"#fff":"#000", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+          {shareCopied ? "Copied! Paste into WhatsApp" : "Share with another operator"}
+        </button>
+      </div>
+
+    </div>
+    </div>
+  );
+}
+
+// ─── Components ───────────────────────────────────────────────────────────────
+const Lbl   = ({ children }) => <label style={{ display:"block", fontSize:11, fontWeight:600, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.4px", marginBottom:5, marginTop:12 }}>{children}</label>;
+const Chip  = ({ label, value, color, subtitle }) => <div style={{ background:"#21262d", borderRadius:7, padding:"8px 10px" }}><div style={{ fontSize:10, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.4px", marginBottom:2 }}>{label}</div><div style={{ fontWeight:700, color:color||"#f0f6fc", fontSize:13 }}>{value}</div>{subtitle && <div style={{ fontSize:9, color:"#484f58", marginTop:1 }}>{subtitle}</div>}</div>;
+const BRow  = ({ label, value, highlight }) => <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, padding:"5px 0", borderBottom:"1px solid #21262d", color:highlight?"#f59e0b":"#8d96a0" }}><span>{label}</span><span>{value}</span></div>;
+const Alert = ({ children, color }) => <div style={{ marginTop:10, padding:"10px 12px", background:color+"11", border:"1px solid "+color+"44", borderRadius:7, color:color, fontSize:13 }}>{children}</div>;
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const I = { width:"100%", background:"#0d1117", border:"1px solid #30363d", borderRadius:7, padding:"10px 12px", color:"#e6edf3", fontSize:14, outline:"none", boxSizing:"border-box" };
+const C = { background:"#161b22", border:"1px solid #21262d", borderRadius:12, padding:22, marginBottom:16 };
