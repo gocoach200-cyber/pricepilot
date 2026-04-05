@@ -491,9 +491,13 @@ export default function App() {
   };
 
   const copyQuoteLink = () => {
-    if (!quoteId) return;
-    const link = "https://pricepilot-eight.vercel.app?quote=" + quoteId + "&from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to) + "&pax=" + pax + "&price=" + displayPrice + "&vehicle=" + encodeURIComponent(result.vehicle || "");
-    const msg = "Hi, I used PricePilot to price this job — " + from + " to " + to + ", " + pax + " passengers. Market rate: " + fmt(displayPrice) + ". Check it out: " + link;
+    const link = "https://pricepilot-eight.vercel.app?from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to) + "&pax=" + pax + "&price=" + displayPrice + "&vehicle=" + encodeURIComponent(result.vehicle || "");
+    const msg = "Hi, I used PricePilot to price this job:\n\n" +
+      "Route: " + from + " to " + to + "\n" +
+      "Passengers: " + pax + "\n" +
+      "Market rate: " + fmt(displayPrice) + "\n\n" +
+      "View the full price breakdown here: " + link + "\n\n" +
+      "PricePilot is a free pricing tool for minibus and coach operators.";
     navigator.clipboard.writeText(msg);
     setQuoteCopied(true); setTimeout(() => setQuoteCopied(false), 2500);
   };
