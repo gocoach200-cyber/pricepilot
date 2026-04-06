@@ -485,19 +485,19 @@ export default function App() {
   };
 
   const copyShareApp = () => {
-    const msg = "Hi, found this free pricing tool for minibus and coach operators — gives you an instant market rate price for any job. Really useful for quoting. Worth trying: https://pricepilot-eight.vercel.app";
+    const msg = "Hi, thought you'd find this useful — it's a free tool that shows you what customers are actually willing to pay for minibus and coach jobs in your area. No more guessing. Worth a look: https://pricepilot-eight.vercel.app";
     navigator.clipboard.writeText(msg);
     setShareCopied(true); setTimeout(() => setShareCopied(false), 2500);
   };
 
   const copyQuoteLink = () => {
     const link = "https://pricepilot-eight.vercel.app?from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to) + "&pax=" + pax + "&price=" + displayPrice + "&vehicle=" + encodeURIComponent(result.vehicle || "");
-    const msg = "Hi, I used PricePilot to price this job:\n\n" +
+    const msg = "Hi, I checked what customers are willing to pay for this job:\n\n" +
       "Route: " + from + " to " + to + "\n" +
       "Passengers: " + pax + "\n" +
-      "Market rate: " + fmt(displayPrice) + "\n\n" +
-      "View the full price breakdown here: " + link + "\n\n" +
-      "PricePilot is a free pricing tool for minibus and coach operators.";
+      "Customer willing to pay: " + fmt(displayPrice) + "\n\n" +
+      "Full breakdown here: " + link + "\n\n" +
+      "PricePilot shows you what customers actually pay for minibus and coach hire — worth trying for free: https://pricepilot-eight.vercel.app";
     navigator.clipboard.writeText(msg);
     setQuoteCopied(true); setTimeout(() => setQuoteCopied(false), 2500);
   };
@@ -596,14 +596,14 @@ export default function App() {
       {/* ── Header ── */}
       <div style={{ marginBottom:20 }}>
         <div style={{ fontSize:26, fontWeight:800, color:"#f59e0b", letterSpacing:"-0.5px" }}>PricePilot</div>
-        <div style={{ fontSize:13, color:"#7d8590", marginBottom:12 }}>Minibus & Coach Hire Pricing Tool</div>
+        <div style={{ fontSize:13, color:"#7d8590", marginBottom:12 }}>Know What Customers Will Pay</div>
 
         <div style={{ background:"#161b22", border:"1px solid #21262d", borderRadius:10, padding:"14px 16px", marginBottom:4 }}>
           <div style={{ fontSize:14, color:"#e6edf3", fontWeight:600, marginBottom:6 }}>
-            Get an accurate market-rate price for any minibus or coach job in seconds
+            Find out what customers are willing to pay for any minibus or coach job
           </div>
           <div style={{ fontSize:12, color:"#7d8590", marginBottom:12 }}>
-            Built by operators, for operators — powered by real UK market data.
+            Stop guessing what customers will pay — PricePilot tells you.
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
             <div style={{ fontSize:12, color:"#7d8590", display:"flex", alignItems:"center", gap:8 }}>
@@ -612,15 +612,20 @@ export default function App() {
             </div>
             <div style={{ fontSize:12, color:"#7d8590", display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ color:"#f59e0b", fontWeight:700 }}>2</span>
-              <span>Get an AI-powered market rate price instantly</span>
+              <span>See what customers in your area are willing to pay</span>
             </div>
             <div style={{ fontSize:12, color:"#7d8590", display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ color:"#f59e0b", fontWeight:700 }}>3</span>
-              <span>Send your quote to the customer with confidence</span>
+              <span>Quote confidently — knowing you're pricing right</span>
             </div>
           </div>
-          <div style={{ marginTop:12, paddingTop:10, borderTop:"1px solid #21262d", fontSize:11, color:"#484f58" }}>
-            All pricing data is anonymous and used only to improve accuracy for the operator community.
+          <div style={{ marginTop:12, paddingTop:10, borderTop:"1px solid #21262d" }}>
+            <div style={{ fontSize:11, fontWeight:700, color:"#4ade80", marginBottom:4 }}>Your customers are safe</div>
+            <div style={{ fontSize:11, color:"#484f58", lineHeight:1.5 }}>
+              We never ask for customer names, phone numbers or email addresses. 
+              We do not contact your customers. We do not store any customer personal information. 
+              PricePilot only uses anonymous route and pricing data to show you what customers pay — nothing else.
+            </div>
           </div>
         </div>
       </div>
@@ -697,7 +702,7 @@ export default function App() {
                     Skip
                   </button>
                 </div>
-                <div style={{ fontSize:11, color:"#484f58", marginTop:12, textAlign:"center" }}>Takes 60 seconds · Helps improve your quotes</div>
+                <div style={{ fontSize:11, color:"#484f58", marginTop:12, textAlign:"center" }}>Takes 60 seconds · No customer data required · 100% anonymous</div>
               </>
             )}
 
@@ -892,6 +897,14 @@ export default function App() {
 
         {error && <Alert color="#f85149">{error}</Alert>}
 
+        {/* Privacy reassurance */}
+        <div style={{ marginTop:10, padding:"10px 12px", background:"#0d1117", border:"1px solid #21262d", borderRadius:7 }}>
+          <div style={{ fontSize:11, color:"#4ade80", fontWeight:700, marginBottom:3 }}>No customer information needed</div>
+          <div style={{ fontSize:11, color:"#484f58" }}>
+            Do not enter any customer names, numbers or emails. We only need the route and job details — never who the customer is.
+          </div>
+        </div>
+
         {/* Owner driver toggle */}
         <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:12, marginBottom:4 }}>
           <button
@@ -1066,8 +1079,8 @@ export default function App() {
 
           {/* Share buttons */}
           <div style={{ borderTop:"1px solid #21262d", paddingTop:16, marginTop:16 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:"#f0f6fc", marginBottom:4 }}>Share this quote</div>
-            <div style={{ fontSize:12, color:"#484f58", marginBottom:12 }}>Send this job price directly to another operator</div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#f0f6fc", marginBottom:4 }}>Share what customers will pay</div>
+            <div style={{ fontSize:12, color:"#484f58", marginBottom:12 }}>Send this to another operator — show them what customers pay for this job</div>
             <button onClick={copyQuoteLink}
               style={{ width:"100%", padding:11, background:quoteCopied?"#16a34a":"#1e3a5f", border:"1px solid #2563eb44", borderRadius:8, color:quoteCopied?"#fff":"#60a5fa", fontWeight:700, fontSize:13, cursor:"pointer", marginBottom:8 }}>
               {quoteCopied ? "Copied! Paste into WhatsApp" : "Share this quote with an operator"}
@@ -1110,10 +1123,21 @@ export default function App() {
         </div>
       )}
 
+      {/* ── Privacy Statement ── */}
+      <div style={{ background:"#0d1117", border:"1px solid #21262d", borderRadius:10, padding:"14px 16px", marginBottom:16 }}>
+        <div style={{ fontSize:12, fontWeight:700, color:"#4ade80", marginBottom:6 }}>Your customers are always protected</div>
+        <div style={{ fontSize:11, color:"#484f58", lineHeight:1.6 }}>
+          PricePilot does not ask for, store or use any customer personal information. 
+          No names. No phone numbers. No email addresses. We never contact your customers. 
+          We only collect anonymous route and pricing data to show operators what customers are willing to pay. 
+          Your customer relationships remain 100% yours.
+        </div>
+      </div>
+
       {/* ── Share PricePilot Footer ── */}
       <div style={{ background:"#161b22", border:"1px solid #21262d", borderRadius:12, padding:20, marginBottom:16, textAlign:"center" }}>
-        <div style={{ fontSize:14, fontWeight:700, color:"#f0f6fc", marginBottom:4 }}>Know another operator?</div>
-        <div style={{ fontSize:12, color:"#7d8590", marginBottom:12 }}>Share PricePilot — the more operators who use it, the more accurate the pricing becomes for everyone.</div>
+        <div style={{ fontSize:14, fontWeight:700, color:"#f0f6fc", marginBottom:4 }}>Know another operator who's tired of guessing?</div>
+        <div style={{ fontSize:12, color:"#7d8590", marginBottom:12 }}>Share PricePilot — the more operators who use it, the more accurately we can show what customers actually pay.</div>
         <button onClick={copyShareApp}
           style={{ padding:"10px 20px", background:shareCopied?"#16a34a":"#f59e0b", border:"none", borderRadius:8, color:shareCopied?"#fff":"#000", fontWeight:700, fontSize:13, cursor:"pointer" }}>
           {shareCopied ? "Copied! Paste into WhatsApp" : "Share with another operator"}
