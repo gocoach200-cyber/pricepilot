@@ -989,6 +989,7 @@ export default function App() {
               <div style={{ background:"#0d1117", borderRadius:8, padding:14 }}>
                 <div style={{ fontSize:10, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>Maximum Price</div>
                 <div style={{ fontSize:26, fontWeight:800, color:"#f59e0b", letterSpacing:"-1px" }}>{fmt(maxPrice)}</div>
+                <div style={{ fontSize:11, color:"#484f58", marginTop:2 }}>{fmt(result.low)} – {fmt(result.high)}</div>
                 <div style={{ fontSize:10, color:"#484f58", marginTop:2 }}>For peak days or premium jobs</div>
               </div>
             </div>
