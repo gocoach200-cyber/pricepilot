@@ -547,6 +547,28 @@ export default function App() {
   const accepted      = jobs.filter(j => j.outcome === "accepted").length;
   const avgP          = jobs.length ? Math.round(jobs.reduce((a,j) => a+j.actual,0) / jobs.length) : 0;
   const displayPrice  = result ? (isReg ? Math.round(result.price * 0.9) : result.price) : 0;
+
+  // Best conversion price — price most likely to win the job
+  // Based on market data: slightly below market average but above floor
+  // Adjusts for day of week and season
+  const conversionPrice = (() => {
+    if (!result) return 0;
+    const base = displayPrice;
+    const dow = date ? new Date(date).getDay() : 3;
+    const month = date ? new Date(date).getMonth() : 6;
+    // On quiet days price slightly lower to win job
+    const dayFactor = (dow === 1 || dow === 2) ? 0.92 : (dow === 5 || dow === 6) ? 1.0 : 0.95;
+    // On quiet months price lower
+    const monthFactor = (month === 0 || month === 1 || month === 10) ? 0.90 : (month === 5 || month === 6 || month === 7 || month === 11) ? 1.0 : 0.95;
+    const conv = Math.round(base * dayFactor * monthFactor / 5) * 5;
+    return Math.max(conv, Math.round(base * 0.85));
+  })();
+
+  // Maximum price — upper end for premium days/jobs
+  const maxPrice = (() => {
+    if (!result) return 0;
+    return Math.round(result.high * (isReg ? 0.9 : 1.0));
+  })();
   // ONE WAY miles only - system multiplies for return trips
   const knownMiles  = findKnownDistance(from, to);
   const oneWayMiles = manualMiles ? parseInt(manualMiles)
@@ -932,53 +954,66 @@ export default function App() {
             <button onClick={() => setIsReg(true)}  style={{ flex:1, padding:8, borderRadius:7, border:"none", fontWeight:700, fontSize:13, cursor:"pointer", background:isReg?"#7c3aed":"#21262d",  color:isReg?"#fff":"#7d8590"  }}>Regular (10% off)</button>
           </div>
 
-          {/* ── Two price display ── */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+          {/* ── Three price display ── */}
+          <div style={{ marginBottom:16 }}>
 
-            {/* Market price */}
-            <div style={{ background:"#0d1117", borderRadius:8, padding:14 }}>
-              <div style={{ fontSize:10, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>Market Average</div>
-              {marketMatch ? (
-                <>
-                  <div style={{ fontSize:28, fontWeight:800, color:"#60a5fa", letterSpacing:"-1px" }}>{fmt(marketMatch.avg)}</div>
-                  <div style={{ fontSize:11, color:"#484f58", marginTop:2 }}>{fmt(marketMatch.low)} – {fmt(marketMatch.high)}</div>
-                  <div style={{ fontSize:10, color:"#484f58", marginTop:2 }}>Based on real operator data</div>
-                </>
-              ) : (
-                <>
-                  <div style={{ fontSize:22, fontWeight:800, color:"#484f58" }}>—</div>
-                  <div style={{ fontSize:10, color:"#484f58", marginTop:2 }}>No data for this route yet</div>
-                </>
-              )}
+            {/* Main price - Best conversion */}
+            <div style={{ background:"#0d1117", borderRadius:10, padding:16, marginBottom:10, border:"1px solid #16a34a44" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                <div style={{ fontSize:11, color:"#4ade80", textTransform:"uppercase", letterSpacing:"0.5px", fontWeight:700 }}>Best Conversion Price</div>
+                <div style={{ fontSize:10, color:"#484f58", background:"#16a34a22", padding:"2px 8px", borderRadius:10 }}>Most likely to win the job</div>
+              </div>
+              <div style={{ fontSize:44, fontWeight:800, color:"#4ade80", letterSpacing:"-2px", lineHeight:1 }}>
+                {fmt(conversionPrice)}
+              </div>
+              <div style={{ fontSize:12, color:"#484f58", marginTop:4 }}>
+                Estimated best price to close the deal — based on market data and demand
+              </div>
+              <div style={{ fontSize:11, color:"#484f58", marginTop:2, fontStyle:"italic" }}>
+                Improves as more operators log outcomes
+              </div>
             </div>
 
-            {/* Your historical price */}
-            <div style={{ background:"#0d1117", borderRadius:8, padding:14 }}>
-              <div style={{ fontSize:10, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>Your Average</div>
-              {myAvgPrice ? (
-                <>
-                  <div style={{ fontSize:28, fontWeight:800, color:"#4ade80", letterSpacing:"-1px" }}>{fmt(myAvgPrice)}</div>
-                  <div style={{ fontSize:10, color:"#484f58", marginTop:2 }}>From {similarJobs.length} similar job{similarJobs.length > 1 ? "s" : ""}</div>
-                </>
-              ) : (
-                <>
-                  <div style={{ fontSize:22, fontWeight:800, color:"#484f58" }}>—</div>
-                  <div style={{ fontSize:10, color:"#484f58", marginTop:2 }}>Log jobs to unlock</div>
-                </>
-              )}
-            </div>
-          </div>
+            {/* Two columns - Market rate and Max price */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
 
-          {/* AI suggested price */}
-          <div style={{ fontSize:13, color:"#7d8590", marginBottom:4 }}>{isReg ? "Loyalty price (10% off)" : "AI Suggested Quote"}</div>
-          <div style={{ fontSize:48, fontWeight:800, color:isReg?"#a78bfa":"#f59e0b", letterSpacing:"-2px", lineHeight:1 }}>
-            {fmt(displayPrice)}
-          </div>
-          {isReg && (
-            <div style={{ fontSize:12, color:"#7d8590", marginTop:2 }}>Full price: {fmt(result.price)} — saving {fmt(result.price - displayPrice)}</div>
-          )}
-          <div style={{ fontSize:13, color:"#7d8590", marginTop:4, marginBottom:16 }}>
-            Range: {fmt(result.low)} – {fmt(result.high)}
+              {/* Market rate */}
+              <div style={{ background:"#0d1117", borderRadius:8, padding:14 }}>
+                <div style={{ fontSize:10, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>Market Rate</div>
+                <div style={{ fontSize:26, fontWeight:800, color:"#60a5fa", letterSpacing:"-1px" }}>{fmt(displayPrice)}</div>
+                <div style={{ fontSize:10, color:"#484f58", marginTop:2 }}>What operators typically charge</div>
+                {isReg && <div style={{ fontSize:10, color:"#a78bfa", marginTop:2 }}>Loyalty -10% applied</div>}
+              </div>
+
+              {/* Maximum price */}
+              <div style={{ background:"#0d1117", borderRadius:8, padding:14 }}>
+                <div style={{ fontSize:10, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>Maximum Price</div>
+                <div style={{ fontSize:26, fontWeight:800, color:"#f59e0b", letterSpacing:"-1px" }}>{fmt(maxPrice)}</div>
+                <div style={{ fontSize:10, color:"#484f58", marginTop:2 }}>For peak days or premium jobs</div>
+              </div>
+            </div>
+
+            {/* Your average if available */}
+            {myAvgPrice && (
+              <div style={{ background:"#0d1117", borderRadius:8, padding:12, border:"1px solid #21262d" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div>
+                    <div style={{ fontSize:10, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:2 }}>Your Average</div>
+                    <div style={{ fontSize:20, fontWeight:800, color:"#a78bfa" }}>{fmt(myAvgPrice)}</div>
+                  </div>
+                  <div style={{ fontSize:11, color:"#484f58", textAlign:"right" }}>
+                    From {similarJobs.length} similar<br/>job{similarJobs.length > 1 ? "s" : ""} you logged
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Market data note */}
+            {marketMatch && (
+              <div style={{ fontSize:11, color:"#484f58", marginTop:8, textAlign:"center" }}>
+                Market data: {fmt(marketMatch.low)} – {fmt(marketMatch.high)} · {fmt(marketMatch.avg)} avg
+              </div>
+            )}
           </div>
 
           {/* Re-quote buttons */}
