@@ -9,11 +9,13 @@ const supabase = createClient(
 );
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const DRIVER_RATE    = 14.50;
-const FUEL_PER_LITRE = 1.75;  // current diesel price per litre
-const MILES_PER_LITRE = 6;    // realistic for loaded minibus
-const RUNNING_UPLIFT  = 1.25; // 25% uplift for wear, tyres, maintenance
-const FUEL_PER_MILE   = (FUEL_PER_LITRE / MILES_PER_LITRE) * RUNNING_UPLIFT; // ~36p per mile
+const DRIVER_RATE = 14.50;
+const FUEL_PER_LITRE = 1.75;
+const MILES_PER_LITRE = 6;
+const RUNNING_UPLIFT = 1.25;
+const FUEL_PER_MILE =
+  (FUEL_PER_LITRE / MILES_PER_LITRE) * RUNNING_UPLIFT;
+
 const API_KEY = process.env.REACT_APP_API_KEY;
 
 // ─── Survey Questions ────────────────────────────────────────────────────────
@@ -25,262 +27,17 @@ const UK_CITIES = [
   "Reading","Brighton","Southampton","Leicester","Coventry","Oxford"
 ];
 
-const TRIPS_BY_BASE = {
-  "London":       [
-    { from:"Peckham SE15, London",    to:"Heathrow Airport",      type:"One way",         time:"05:00"       },
-    { from:"Brixton SW2, London",     to:"Gatwick Airport",       type:"One way",         time:"06:00"       },
-    { from:"Hackney E8, London",      to:"Luton Airport",         type:"One way",         time:"04:30"       },
-    { from:"Lewisham SE13, London",   to:"Stansted Airport",      type:"One way",         time:"05:00"       },
-    { from:"Central London",          to:"O2 Arena",              type:"Same day return", time:"17:00-23:00" },
-    { from:"Peckham SE15, London",    to:"Wembley Stadium",       type:"Same day return", time:"13:00-19:00" },
-    { from:"Brixton SW2, London",     to:"Brighton City Centre",  type:"Same day return", time:"09:00-18:00" },
-    { from:"Central London",          to:"Birmingham City Centre", type:"Same day return", time:"09:00-17:30" },
-    { from:"Hackney E8, London",      to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:30" },
-    { from:"South London",            to:"Oxford City Centre",    type:"Same day return", time:"09:00-17:00" },
-  ],
-  "Birmingham":   [
-    { from:"Birmingham City Centre",  to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:30" },
-    { from:"Birmingham City Centre",  to:"Leeds City Centre",     type:"Same day return", time:"09:00-17:30" },
-    { from:"Birmingham City Centre",  to:"London Victoria",       type:"Same day return", time:"08:00-19:00" },
-    { from:"Birmingham City Centre",  to:"Bristol City Centre",   type:"Same day return", time:"09:00-17:00" },
-    { from:"Birmingham City Centre",  to:"Cardiff City Centre",   type:"Same day return", time:"09:00-17:00" },
-  ],
-  "Manchester":   [
-    { from:"Manchester Piccadilly",   to:"Leeds City Centre",     type:"Same day return", time:"10:00-18:30" },
-    { from:"Manchester Piccadilly",   to:"Liverpool City Centre", type:"Same day return", time:"10:00-18:00" },
-    { from:"Manchester Piccadilly",   to:"London Victoria",       type:"Same day return", time:"08:00-19:00" },
-    { from:"Manchester Piccadilly",   to:"Newcastle City Centre", type:"Same day return", time:"09:00-18:00" },
-    { from:"Manchester Airport",      to:"Leeds City Centre",     type:"Return diff day", time:"06:00"       },
-  ],
-  "Leeds":        [
-    { from:"Leeds City Centre",       to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:00" },
-    { from:"Leeds City Centre",       to:"Newcastle City Centre", type:"Same day return", time:"09:00-17:00" },
-    { from:"Leeds City Centre",       to:"London Victoria",       type:"Same day return", time:"08:00-19:00" },
-    { from:"Leeds City Centre",       to:"Birmingham City Centre",type:"Same day return", time:"09:00-17:30" },
-    { from:"Leeds Bradford Airport",  to:"London Victoria",       type:"Return diff day", time:"06:00"       },
-  ],
-  "Bristol":      [
-    { from:"Bristol City Centre",     to:"London Victoria",       type:"Same day return", time:"09:00-18:00" },
-    { from:"Bristol City Centre",     to:"Birmingham City Centre",type:"Same day return", time:"09:00-17:00" },
-    { from:"Bristol City Centre",     to:"Cardiff City Centre",   type:"Same day return", time:"10:00-18:00" },
-    { from:"Bristol City Centre",     to:"Manchester Piccadilly", type:"Same day return", time:"08:00-19:00" },
-    { from:"Bristol Airport",         to:"London Victoria",       type:"Return diff day", time:"06:00"       },
-  ],
-  "Reading":      [
-    { from:"Reading Town Centre",     to:"London Victoria",       type:"Same day return", time:"09:00-18:00" },
-    { from:"Reading Town Centre",     to:"Birmingham City Centre",type:"Same day return", time:"09:00-17:30" },
-    { from:"Reading Town Centre",     to:"Bristol City Centre",   type:"Same day return", time:"09:00-17:00" },
-    { from:"Reading Town Centre",     to:"Heathrow Airport",      type:"Return diff day", time:"05:00"       },
-    { from:"Reading Town Centre",     to:"Manchester Piccadilly", type:"Same day return", time:"08:00-19:00" },
-  ],
-  "default":      [
-    { from:"City Centre",             to:"London Victoria",       type:"Same day return", time:"09:00-18:00" },
-    { from:"City Centre",             to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:30" },
-    { from:"City Centre",             to:"Birmingham City Centre",type:"Same day return", time:"09:00-17:30" },
-  ],
-};
-
-const getPaxFromVehicle = (vehicle) => {
-  if (vehicle === "8-seater")  return 8;
-  if (vehicle === "12-seater") return 12;
-  if (vehicle === "16-seater") return 16;
-  if (vehicle === "24-seater") return 24;
-  if (vehicle === "32-seater") return 30;
-  if (vehicle === "49-seater") return 45;
-  return 16;
-};
-
-const getSurveyTrips = (base, vehicle) => {
-  const allTrips = TRIPS_BY_BASE[base] || TRIPS_BY_BASE["default"];
-  const pax = getPaxFromVehicle(vehicle);
-  // Randomly select 3 trips from the pool so repeat visitors see different routes
-  const shuffled = [...allTrips].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 3).map(t => ({ ...t, pax }));
-};
-
-// ─── Real Market Data (collected from UK operators, May 2025) ─────────────────
+// ─── Real Market Data ─────────────────────────────────────────────────────────
 const MARKET_DATA = [
   { from:"birmingham", to:"manchester", pax:16, type:"return", avg:583, low:575, high:600 },
   { from:"birmingham", to:"manchester", pax:30, type:"return", avg:783, low:600, high:900 },
-  { from:"birmingham", to:"manchester", pax:50, type:"return", avg:730, low:575, high:895 },
-  { from:"hackney",    to:"luton",      pax:23, type:"return", avg:1194, low:865, high:1620 },
-  { from:"hackney",    to:"wembley",    pax:16, type:"return", avg:400, low:400, high:400 },
-  { from:"london",     to:"o2",         pax:16, type:"return", avg:450, low:450, high:450 },
-  { from:"manchester", to:"leeds",      pax:30, type:"return", avg:728, low:575, high:895 },
-  { from:"manchester", to:"leeds",      pax:16, type:"return", avg:350, low:350, high:350 },
-  { from:"london",     to:"stansted",   pax:12, type:"one-way", avg:275, low:275, high:275 },
-  { from:"reading",    to:"birmingham", pax:30, type:"return", avg:952, low:895, high:995 },
-  { from:"brixton",    to:"windsor",    pax:16, type:"return", avg:510, low:495, high:525 },
-  { from:"peckham",    to:"heathrow",   pax:14, type:"one-way", avg:470, low:420, high:495 },
-  { from:"dartford",   to:"godstone",      pax:50, type:"return",   avg:825,  low:700,  high:900  },
-  { from:"heathrow",   to:"walworth",      pax:12, type:"one-way",  avg:242,  low:200,  high:300  },
-  { from:"heathrow",   to:"walworth",      pax:18, type:"one-way",  avg:461,  low:350,  high:575  },
-  { from:"se12",       to:"o2",            pax:15, type:"return",   avg:312,  low:200,  high:450  },
-  { from:"london",     to:"luton",         pax:13, type:"one-way",  avg:270,  low:200,  high:330  },
-  { from:"london",     to:"gatwick",       pax:16, type:"one-way",  avg:253,  low:190,  high:300  },
-  { from:"dartford",   to:"piccadilly",    pax:13, type:"one-way",  avg:394,  low:356,  high:450  },
-  { from:"bromley",    to:"heathrow",      pax:16, type:"one-way",  avg:280,  low:220,  high:350  },
-  { from:"bromley",    to:"o2",            pax:16, type:"return",   avg:300,  low:240,  high:380  },
-  { from:"dartford",   to:"heathrow",      pax:16, type:"one-way",  avg:290,  low:230,  high:360  },
-  { from:"maidstone",  to:"london",        pax:16, type:"one-way",  avg:350,  low:280,  high:420  },
-  { from:"gravesend",  to:"heathrow",      pax:16, type:"one-way",  avg:310,  low:250,  high:380  },
-  { from:"chatham",    to:"london",        pax:16, type:"one-way",  avg:380,  low:300,  high:450  },
-  { from:"canterbury", to:"london",        pax:16, type:"one-way",  avg:450,  low:380,  high:550  },
-  { from:"birmingham", to:"coventry",      pax:16, type:"return",   avg:331,  low:280,  high:400  },
-  { from:"birmingham", to:"coventry",      pax:16, type:"return",   avg:433,  low:370,  high:500,  note:"luxury" },
-  { from:"birmingham", to:"northampton",   pax:16, type:"return",   avg:383,  low:320,  high:430  },
-  { from:"birmingham", to:"stoke",         pax:16, type:"return",   avg:361,  low:320,  high:420  },
-  { from:"birmingham", to:"stoke",         pax:16, type:"return",   avg:474,  low:420,  high:520,  note:"luxury" },
-  { from:"birmingham", to:"nottingham",    pax:16, type:"return",   avg:364,  low:320,  high:400  },
-  { from:"birmingham", to:"nottingham",    pax:16, type:"return",   avg:491,  low:475,  high:500,  note:"luxury" },
+  { from:"manchester", to:"leeds", pax:16, type:"return", avg:350, low:350, high:350 },
+  { from:"london", to:"stansted", pax:12, type:"one-way", avg:275, low:275, high:275 },
+  { from:"brixton", to:"windsor", pax:16, type:"return", avg:510, low:495, high:525 },
+  { from:"peckham", to:"heathrow", pax:14, type:"one-way", avg:470, low:420, high:495 },
 ];
 
-// Known UK road distances (miles, one way)
-const KNOWN_DISTANCES = [
-  { from:"london", to:"manchester",  miles:200 },
-  { from:"london", to:"birmingham",  miles:120 },
-  { from:"london", to:"leeds",       miles:195 },
-  { from:"london", to:"bristol",     miles:115 },
-  { from:"london", to:"edinburgh",   miles:415 },
-  { from:"london", to:"cardiff",     miles:155 },
-// PricePilot v4 - April 2026
-/* eslint-disable */
-import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_KEY
-);
-
-// ─── Config ───────────────────────────────────────────────────────────────────
-const DRIVER_RATE    = 14.50;
-const FUEL_PER_LITRE = 1.75;  // current diesel price per litre
-const MILES_PER_LITRE = 6;    // realistic for loaded minibus
-const RUNNING_UPLIFT  = 1.25; // 25% uplift for wear, tyres, maintenance
-const FUEL_PER_MILE   = (FUEL_PER_LITRE / MILES_PER_LITRE) * RUNNING_UPLIFT; // ~36p per mile
-const API_KEY = process.env.REACT_APP_API_KEY;
-
-// ─── Survey Questions ────────────────────────────────────────────────────────
-const VEHICLE_SIZES = ["8-seater","12-seater","16-seater","24-seater","32-seater","49-seater"];
-
-const UK_CITIES = [
-  "London","Birmingham","Manchester","Leeds","Bristol","Sheffield",
-  "Liverpool","Newcastle","Nottingham","Cardiff","Edinburgh","Glasgow",
-  "Reading","Brighton","Southampton","Leicester","Coventry","Oxford"
-];
-
-const TRIPS_BY_BASE = {
-  "London":       [
-    { from:"Peckham SE15, London",    to:"Heathrow Airport",      type:"One way",         time:"05:00"       },
-    { from:"Brixton SW2, London",     to:"Gatwick Airport",       type:"One way",         time:"06:00"       },
-    { from:"Hackney E8, London",      to:"Luton Airport",         type:"One way",         time:"04:30"       },
-    { from:"Lewisham SE13, London",   to:"Stansted Airport",      type:"One way",         time:"05:00"       },
-    { from:"Central London",          to:"O2 Arena",              type:"Same day return", time:"17:00-23:00" },
-    { from:"Peckham SE15, London",    to:"Wembley Stadium",       type:"Same day return", time:"13:00-19:00" },
-    { from:"Brixton SW2, London",     to:"Brighton City Centre",  type:"Same day return", time:"09:00-18:00" },
-    { from:"Central London",          to:"Birmingham City Centre", type:"Same day return", time:"09:00-17:30" },
-    { from:"Hackney E8, London",      to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:30" },
-    { from:"South London",            to:"Oxford City Centre",    type:"Same day return", time:"09:00-17:00" },
-  ],
-  "Birmingham":   [
-    { from:"Birmingham City Centre",  to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:30" },
-    { from:"Birmingham City Centre",  to:"Leeds City Centre",     type:"Same day return", time:"09:00-17:30" },
-    { from:"Birmingham City Centre",  to:"London Victoria",       type:"Same day return", time:"08:00-19:00" },
-    { from:"Birmingham City Centre",  to:"Bristol City Centre",   type:"Same day return", time:"09:00-17:00" },
-    { from:"Birmingham City Centre",  to:"Cardiff City Centre",   type:"Same day return", time:"09:00-17:00" },
-  ],
-  "Manchester":   [
-    { from:"Manchester Piccadilly",   to:"Leeds City Centre",     type:"Same day return", time:"10:00-18:30" },
-    { from:"Manchester Piccadilly",   to:"Liverpool City Centre", type:"Same day return", time:"10:00-18:00" },
-    { from:"Manchester Piccadilly",   to:"London Victoria",       type:"Same day return", time:"08:00-19:00" },
-    { from:"Manchester Piccadilly",   to:"Newcastle City Centre", type:"Same day return", time:"09:00-18:00" },
-    { from:"Manchester Airport",      to:"Leeds City Centre",     type:"Return diff day", time:"06:00"       },
-  ],
-  "Leeds":        [
-    { from:"Leeds City Centre",       to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:00" },
-    { from:"Leeds City Centre",       to:"Newcastle City Centre", type:"Same day return", time:"09:00-17:00" },
-    { from:"Leeds City Centre",       to:"London Victoria",       type:"Same day return", time:"08:00-19:00" },
-    { from:"Leeds City Centre",       to:"Birmingham City Centre",type:"Same day return", time:"09:00-17:30" },
-    { from:"Leeds Bradford Airport",  to:"London Victoria",       type:"Return diff day", time:"06:00"       },
-  ],
-  "Bristol":      [
-    { from:"Bristol City Centre",     to:"London Victoria",       type:"Same day return", time:"09:00-18:00" },
-    { from:"Bristol City Centre",     to:"Birmingham City Centre",type:"Same day return", time:"09:00-17:00" },
-    { from:"Bristol City Centre",     to:"Cardiff City Centre",   type:"Same day return", time:"10:00-18:00" },
-    { from:"Bristol City Centre",     to:"Manchester Piccadilly", type:"Same day return", time:"08:00-19:00" },
-    { from:"Bristol Airport",         to:"London Victoria",       type:"Return diff day", time:"06:00"       },
-  ],
-  "Reading":      [
-    { from:"Reading Town Centre",     to:"London Victoria",       type:"Same day return", time:"09:00-18:00" },
-    { from:"Reading Town Centre",     to:"Birmingham City Centre",type:"Same day return", time:"09:00-17:30" },
-    { from:"Reading Town Centre",     to:"Bristol City Centre",   type:"Same day return", time:"09:00-17:00" },
-    { from:"Reading Town Centre",     to:"Heathrow Airport",      type:"Return diff day", time:"05:00"       },
-    { from:"Reading Town Centre",     to:"Manchester Piccadilly", type:"Same day return", time:"08:00-19:00" },
-  ],
-  "default":      [
-    { from:"City Centre",             to:"London Victoria",       type:"Same day return", time:"09:00-18:00" },
-    { from:"City Centre",             to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:30" },
-    { from:"City Centre",             to:"Birmingham City Centre",type:"Same day return", time:"09:00-17:30" },
-  ],
-};
-
-const getPaxFromVehicle = (vehicle) => {
-  if (vehicle === "8-seater")  return 8;
-  if (vehicle === "12-seater") return 12;
-  if (vehicle === "16-seater") return 16;
-  if (vehicle === "24-seater") return 24;
-  if (vehicle === "32-seater") return 30;
-  if (vehicle === "49-seater") return 45;
-  return 16;
-};
-
-const getSurveyTrips = (base, vehicle) => {
-  const allTrips = TRIPS_BY_BASE[base] || TRIPS_BY_BASE["default"];
-  const pax = getPaxFromVehicle(vehicle);
-  // Randomly select 3 trips from the pool so repeat visitors see different routes
-  const shuffled = [...allTrips].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 3).map(t => ({ ...t, pax }));
-};
-
-// ─── Real Market Data (collected from UK operators, May 2025) ─────────────────
-const MARKET_DATA = [
-  { from:"birmingham", to:"manchester", pax:16, type:"return", avg:583, low:575, high:600 },
-  { from:"birmingham", to:"manchester", pax:30, type:"return", avg:783, low:600, high:900 },
-  { from:"birmingham", to:"manchester", pax:50, type:"return", avg:730, low:575, high:895 },
-  { from:"hackney",    to:"luton",      pax:23, type:"return", avg:1194, low:865, high:1620 },
-  { from:"hackney",    to:"wembley",    pax:16, type:"return", avg:400, low:400, high:400 },
-  { from:"london",     to:"o2",         pax:16, type:"return", avg:450, low:450, high:450 },
-  { from:"manchester", to:"leeds",      pax:30, type:"return", avg:728, low:575, high:895 },
-  { from:"manchester", to:"leeds",      pax:16, type:"return", avg:350, low:350, high:350 },
-  { from:"london",     to:"stansted",   pax:12, type:"one-way", avg:275, low:275, high:275 },
-  { from:"reading",    to:"birmingham", pax:30, type:"return", avg:952, low:895, high:995 },
-  { from:"brixton",    to:"windsor",    pax:16, type:"return", avg:510, low:495, high:525 },
-  { from:"peckham",    to:"heathrow",   pax:14, type:"one-way", avg:470, low:420, high:495 },
-  { from:"dartford",   to:"godstone",      pax:50, type:"return",   avg:825,  low:700,  high:900  },
-  { from:"heathrow",   to:"walworth",      pax:12, type:"one-way",  avg:242,  low:200,  high:300  },
-  { from:"heathrow",   to:"walworth",      pax:18, type:"one-way",  avg:461,  low:350,  high:575  },
-  { from:"se12",       to:"o2",            pax:15, type:"return",   avg:312,  low:200,  high:450  },
-  { from:"london",     to:"luton",         pax:13, type:"one-way",  avg:270,  low:200,  high:330  },
-  { from:"london",     to:"gatwick",       pax:16, type:"one-way",  avg:253,  low:190,  high:300  },
-  { from:"dartford",   to:"piccadilly",    pax:13, type:"one-way",  avg:394,  low:356,  high:450  },
-  { from:"bromley",    to:"heathrow",      pax:16, type:"one-way",  avg:280,  low:220,  high:350  },
-  { from:"bromley",    to:"o2",            pax:16, type:"return",   avg:300,  low:240,  high:380  },
-  { from:"dartford",   to:"heathrow",      pax:16, type:"one-way",  avg:290,  low:230,  high:360  },
-  { from:"maidstone",  to:"london",        pax:16, type:"one-way",  avg:350,  low:280,  high:420  },
-  { from:"gravesend",  to:"heathrow",      pax:16, type:"one-way",  avg:310,  low:250,  high:380  },
-  { from:"chatham",    to:"london",        pax:16, type:"one-way",  avg:380,  low:300,  high:450  },
-  { from:"canterbury", to:"london",        pax:16, type:"one-way",  avg:450,  low:380,  high:550  },
-  { from:"birmingham", to:"coventry",      pax:16, type:"return",   avg:331,  low:280,  high:400  },
-  { from:"birmingham", to:"coventry",      pax:16, type:"return",   avg:433,  low:370,  high:500,  note:"luxury" },
-  { from:"birmingham", to:"northampton",   pax:16, type:"return",   avg:383,  low:320,  high:430  },
-  { from:"birmingham", to:"stoke",         pax:16, type:"return",   avg:361,  low:320,  high:420  },
-  { from:"birmingham", to:"stoke",         pax:16, type:"return",   avg:474,  low:420,  high:520,  note:"luxury" },
-  { from:"birmingham", to:"nottingham",    pax:16, type:"return",   avg:364,  low:320,  high:400  },
-  { from:"birmingham", to:"nottingham",    pax:16, type:"return",   avg:491,  low:475,  high:500,  note:"luxury" },
-];
-
-// Known UK road distances (miles, one way)
+// ─── Known UK road distances (FIXED) ──────────────────────────────────────────
 const KNOWN_DISTANCES = [
   { from:"london", to:"manchester",  miles:200 },
   { from:"london", to:"birmingham",  miles:120 },
@@ -292,204 +49,29 @@ const KNOWN_DISTANCES = [
   { from:"london", to:"sheffield",   miles:170 },
   { from:"london", to:"nottingham",  miles:130 },
   { from:"london", to:"newcastle",   miles:285 },
-  { from:"london", to:"heathrow",    miles:15  },
-  { from:"london", to:"gatwick",     miles:28  },
-  { from:"london", to:"stansted",    miles:35  },
-  { from:"london", to:"luton",       miles:35  },
-  { from:"london", to:"brighton",    miles:55  },
-  { from:"london", to:"wembley",     miles:12  },
-  { from:"london", to:"o2",          miles:8   },
-  { from:"london", to:"windsor",     miles:25  },
-  { from:"peckham", to:"stansted",   miles:35  },
-  { from:"peckham", to:"heathrow",   miles:20  },
-  { from:"peckham", to:"manchester", miles:200 },
-  { from:"peckham", to:"birmingham", miles:120 },
-  { from:"brixton", to:"heathrow",   miles:16  },
-  { from:"brixton", to:"manchester", miles:200 },
-  { from:"hackney", to:"luton",      miles:35  },
-  { from:"hackney", to:"stansted",   miles:35  },
-  { from:"birmingham", to:"manchester", miles:85  },
-  { from:"birmingham", to:"leeds",      miles:115 },
-  { from:"birmingham", to:"bristol",    miles:90  },
-  { from:"birmingham", to:"cardiff",    miles:100 },
-  { from:"birmingham", to:"liverpool",  miles:100 },
-  { from:"manchester", to:"leeds",      miles:45  },
-  { from:"manchester", to:"liverpool",  miles:35  },
-  { from:"manchester", to:"sheffield",  miles:40  },
-  { from:"manchester", to:"newcastle",  miles:145 },
-  { from:"leeds",      to:"newcastle",  miles:95  },
-  { from:"reading",    to:"london",     miles:40  },
-  { from:"reading",    to:"birmingham", miles:100 },
-  { from:"reading",    to:"bristol",    miles:75  },
-  { from:"dartford",   to:"godstone",      miles:45  },
-  { from:"dartford",   to:"piccadilly",    miles:25  },
-  { from:"dartford",   to:"heathrow",      miles:35  },
-  { from:"dartford",   to:"o2",            miles:18  },
-  { from:"dartford",   to:"wembley",       miles:30  },
-  { from:"dartford",   to:"gatwick",       miles:45  },
-  { from:"dartford",   to:"luton",         miles:55  },
-  { from:"dartford",   to:"stansted",      miles:50  },
-  { from:"dartford",   to:"birmingham",    miles:120 },
-  { from:"dartford",   to:"manchester",    miles:220 },
-  { from:"dartford",   to:"brighton",      miles:70  },
-  { from:"dartford",   to:"cambridge",     miles:75  },
-  { from:"bromley",    to:"heathrow",      miles:28  },
-  { from:"bromley",    to:"o2",            miles:14  },
-  { from:"bromley",    to:"wembley",       miles:25  },
-  { from:"bromley",    to:"gatwick",       miles:22  },
-  { from:"bromley",    to:"luton",         miles:48  },
-  { from:"bromley",    to:"stansted",      miles:45  },
-  { from:"bromley",    to:"birmingham",    miles:115 },
-  { from:"bromley",    to:"manchester",    miles:215 },
-  { from:"bromley",    to:"brighton",      miles:50  },
-  { from:"maidstone",  to:"london",        miles:35  },
-  { from:"maidstone",  to:"heathrow",      miles:55  },
-  { from:"maidstone",  to:"gatwick",       miles:35  },
-  { from:"maidstone",  to:"wembley",       miles:50  },
-  { from:"gravesend",  to:"london",        miles:25  },
-  { from:"gravesend",  to:"heathrow",      miles:40  },
-  { from:"chatham",    to:"london",        miles:35  },
-  { from:"chatham",    to:"heathrow",      miles:55  },
-  { from:"chatham",    to:"wembley",       miles:50  },
-  { from:"canterbury", to:"london",        miles:60  },
-  { from:"canterbury", to:"heathrow",      miles:80  },
-  { from:"sevenoaks",  to:"london",        miles:25  },
-  { from:"sevenoaks",  to:"heathrow",      miles:30  },
-  { from:"tunbridge",  to:"london",        miles:35  },
-  { from:"tunbridge",  to:"heathrow",      miles:50  },
-  { from:"folkestone", to:"london",        miles:75  },
-  { from:"dover",      to:"london",        miles:80  },
-  { from:"dover",      to:"heathrow",      miles:95  },
-  { from:"ashford",    to:"london",        miles:60  },
-  { from:"ashford",    to:"heathrow",      miles:75  },
-  { from:"aylesbury",  to:"london",        miles:45  },
-  { from:"aylesbury",  to:"heathrow",      miles:35  },
-  { from:"aylesbury",  to:"wembley",       miles:40  },
-  { from:"oxford",     to:"heathrow",      miles:45  },
-  { from:"oxford",     to:"wembley",       miles:55  },
-  { from:"oxford",     to:"birmingham",    miles:65  },
-  { from:"highwycombe",to:"london",        miles:30  },
-  { from:"highwycombe",to:"heathrow",      miles:20  },
-  { from:"eltham",     to:"o2",            miles:5   },
-  { from:"eltham",     to:"wembley",       miles:20  },
-  { from:"lewisham",   to:"wembley",       miles:18  },
-  { from:"greenwich",  to:"heathrow",      miles:22  },
-  { from:"woolwich",   to:"heathrow",      miles:20  },
-  { from:"sidcup",     to:"heathrow",      miles:25  },
-  { from:"bexleyheath",to:"heathrow",      miles:25  },
-  { from:"bexley",     to:"heathrow",      miles:25  },
-  { from:"erith",      to:"heathrow",      miles:28  },
-  { from:"thamesmead", to:"heathrow",      miles:22  },
-  { from:"birmingham", to:"coventry",      miles:20  },
-  { from:"birmingham", to:"northampton",   miles:45  },
-  { from:"birmingham", to:"stoke",         miles:40  },
-  { from:"birmingham", to:"nottingham",    miles:50  },
-  { from:"birmingham", to:"wolverhampton", miles:15  },
-  { from:"birmingham", to:"derby",         miles:40  },
-  { from:"birmingham", to:"leicester",     miles:40  },
-  { from:"birmingham", to:"stratford",     miles:25  },
-  { from:"birmingham", to:"cheltenham",    miles:45  },
 ];
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const fmt = (n) =>
+  typeof n === "number"
+    ? "£" + Math.round(n).toLocaleString("en-GB")
+    : n;
+
+// Example function (safe)
 const findKnownDistance = (from, to) => {
   const f = from.toLowerCase();
   const t = to.toLowerCase();
+
   for (const d of KNOWN_DISTANCES) {
-    const fromMatch = f.includes(d.from) || d.from.includes(f.split(/[ ,]+/)[0]);
-    const toMatch   = t.includes(d.to)   || d.to.includes(t.split(/[ ,]+/)[0]);
-    if (fromMatch && toMatch) return d.miles;
-    // Check reverse
-    const fromMatchR = f.includes(d.to)   || d.to.includes(f.split(/[ ,]+/)[0]);
-    const toMatchR   = t.includes(d.from) || d.from.includes(t.split(/[ ,]+/)[0]);
-    if (fromMatchR && toMatchR) return d.miles;
-  }
-  return null;
-};
-
-// Find closest market data match
-const findMarketPrice = (from, to, pax, type) => {
-  const f = from.toLowerCase();
-  const t = to.toLowerCase();
-  const p = parseInt(pax) || 0;
-  let best = null, bestScore = 0;
-  for (const d of MARKET_DATA) {
-    let score = 0;
-    // Location matching - both from AND to must match to get a good score
-    const fromMatch = f.includes(d.from) || d.from.includes(f.split(/[\s,]+/)[0]);
-    const toMatch   = t.includes(d.to)   || d.to.includes(t.split(/[\s,]+/)[0]);
-    if (fromMatch) score += 3;
-    if (toMatch)   score += 3;
-    // Trip type must match - penalise mismatch
-    if (d.type === type) score += 3;
-    else score -= 2;
-    // Passenger count
-    const paxDiff = Math.abs(d.pax - p);
-    if (paxDiff === 0)       score += 2;
-    else if (paxDiff <= 4)   score += 1;
-    else if (paxDiff > 10)   score -= 1;
-    if (score > bestScore) { bestScore = score; best = d; }
-  }
-  // Require both locations to match (score >= 6) to show market data
-  return bestScore >= 6 ? best : null;
-};
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmt  = (n) => typeof n === "number" ? "£" + Math.round(n).toLocaleString("en-GB") : n;
-
-// UK Events Calendar - dates that affect demand
-const UK_EVENTS = [
-  { month:0,  day:1,  name:"New Year's Day", advice:"Price higher — very high demand", uplift:20 },
-  { month:2,  day:14, name:"Cheltenham Festival", advice:"Price higher near Cheltenham — race day surge", uplift:15 },
-  { month:3,  day:4,  name:"Grand National", advice:"Price higher near Liverpool — race day surge", uplift:15 },
-  { month:4,  day:25, name:"FA Cup Final", advice:"Price higher for Wembley jobs — FA Cup Final", uplift:15 },
-  { month:5,  day:20, name:"Glastonbury Festival", advice:"Price higher for Somerset/Bristol routes — Glastonbury", uplift:20 },
-  { month:6,  day:1,  name:"Wimbledon", advice:"Price higher for SW London — Wimbledon fortnight", uplift:15 },
-  { month:7,  day:23, name:"Notting Hill Carnival", advice:"Price higher for West London — Notting Hill Carnival weekend", uplift:20 },
-  { month:10, day:5,  name:"Bonfire Night", advice:"Evening jobs price higher — Bonfire Night demand", uplift:10 },
-  { month:11, day:20, name:"Christmas Period", advice:"Price higher — Christmas party season peak", uplift:15 },
-  { month:11, day:31, name:"New Year's Eve", advice:"Price significantly higher — New Year's Eve, highest demand night of year", uplift:25 },
-];
-
-const getEventAlert = (dateStr) => {
-  if (!dateStr) return null;
-  const dt = new Date(dateStr);
-  const m = dt.getMonth(), d = dt.getDate();
-  for (const ev of UK_EVENTS) {
-    if (ev.month === m && Math.abs(ev.day - d) <= 2) {
-      return { name: ev.name, advice: ev.advice, uplift: ev.uplift };
+    if (
+      (f.includes(d.from) && t.includes(d.to)) ||
+      (f.includes(d.to) && t.includes(d.from))
+    ) {
+      return d.miles;
     }
   }
   return null;
 };
-
-const getDayAdvice = (dateStr) => {
-  if (!dateStr) return null;
-  const day = new Date(dateStr).getDay(); // 0=Sun, 5=Fri, 6=Sat
-  if (day === 5) return { advice: "Friday — popular booking day, consider pricing 5-10% higher", type: "peak" };
-  if (day === 6) return { advice: "Saturday — highest demand day of the week, price confidently", type: "peak" };
-  if (day === 0) return { advice: "Sunday — popular for day trips and events, good demand", type: "peak" };
-  if (day === 1) return { advice: "Monday — quieter day, consider competitive pricing to secure the booking", type: "quiet" };
-  if (day === 2) return { advice: "Tuesday — quieter mid-week, competitive pricing recommended", type: "quiet" };
-  if (day === 3) return { advice: "Wednesday — mid-week, standard pricing", type: "normal" };
-  if (day === 4) return { advice: "Thursday — demand picks up towards weekend, standard pricing", type: "normal" };
-  return null;
-};
-
-const getMonthAdvice = (dateStr) => {
-  if (!dateStr) return null;
-  const m = new Date(dateStr).getMonth();
-  if (m === 0)  return { advice: "January — very quiet period. Consider pricing 10-15% lower to secure bookings.", type: "quiet" };
-  if (m === 1)  return { advice: "February — quiet month. Competitive pricing recommended to win jobs.", type: "quiet" };
-  if (m === 4)  return { advice: "May — bank holidays and wedding season starting. Good demand.", type: "peak" };
-  if (m === 5)  return { advice: "June — peak summer season. Price confidently, demand is high.", type: "peak" };
-  if (m === 6)  return { advice: "July — peak summer season. High demand, price at upper end.", type: "peak" };
-  if (m === 7)  return { advice: "August — peak season. Highest demand of the year, price accordingly.", type: "peak" };
-  if (m === 8)  return { advice: "September — post-summer slowdown. Monitor demand carefully.", type: "normal" };
-  if (m === 10) return { advice: "November — quieter period. Consider competitive pricing to secure bookings.", type: "quiet" };
-  if (m === 11) return { advice: "December — Christmas party season. Very high demand, price higher.", type: "peak" };
-  return null;
-};
-
 const isBusy = (d) => {
   if (!d) return null;
   const dt = new Date(d), m = dt.getMonth(), day = dt.getDate();
