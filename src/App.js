@@ -126,6 +126,13 @@ const MARKET_DATA = [
   { from:"gravesend",  to:"heathrow",      pax:16, type:"one-way",  avg:310,  low:250,  high:380  },
   { from:"chatham",    to:"london",        pax:16, type:"one-way",  avg:380,  low:300,  high:450  },
   { from:"canterbury", to:"london",        pax:16, type:"one-way",  avg:450,  low:380,  high:550  },
+  { from:"birmingham", to:"coventry",      pax:16, type:"return",   avg:331,  low:280,  high:400  },
+  { from:"birmingham", to:"coventry",      pax:16, type:"return",   avg:433,  low:370,  high:500,  note:"luxury" },
+  { from:"birmingham", to:"northampton",   pax:16, type:"return",   avg:383,  low:320,  high:430  },
+  { from:"birmingham", to:"stoke",         pax:16, type:"return",   avg:361,  low:320,  high:420  },
+  { from:"birmingham", to:"stoke",         pax:16, type:"return",   avg:474,  low:420,  high:520,  note:"luxury" },
+  { from:"birmingham", to:"nottingham",    pax:16, type:"return",   avg:364,  low:320,  high:400  },
+  { from:"birmingham", to:"nottingham",    pax:16, type:"return",   avg:491,  low:475,  high:500,  note:"luxury" },
 ];
 
 // Known UK road distances (miles, one way)
@@ -228,6 +235,15 @@ const KNOWN_DISTANCES = [
   { from:"bexley",     to:"heathrow",      miles:25  },
   { from:"erith",      to:"heathrow",      miles:28  },
   { from:"thamesmead", to:"heathrow",      miles:22  },
+  { from:"birmingham", to:"coventry",      miles:20  },
+  { from:"birmingham", to:"northampton",   miles:45  },
+  { from:"birmingham", to:"stoke",         miles:40  },
+  { from:"birmingham", to:"nottingham",    miles:50  },
+  { from:"birmingham", to:"wolverhampton", miles:15  },
+  { from:"birmingham", to:"derby",         miles:40  },
+  { from:"birmingham", to:"leicester",     miles:40  },
+  { from:"birmingham", to:"stratford",     miles:25  },
+  { from:"birmingham", to:"cheltenham",    miles:45  },
 ];
 
 const findKnownDistance = (from, to) => {
@@ -368,7 +384,7 @@ const buildPrompt = (from, to, pax, date, time, trip, retDate, retTime, jobs, va
   return "UK minibus hire pricing expert. Price at UPPER end of market rate.\n" +
     "PURPOSE PREMIUMS — apply on top of base price: Stag Do +15%, Hen Do +15%, Festival +20%, Night Out +15%, Football +15%, Rugby +15%, Horse Racing +15%, Concert +15%, Corporate/Business +20%, School Prom +15%, Golf Day +10%, Birthday Party +10%. Wedding/Funeral/Airport/Cruise/Day Trip/Educational/Charity/School Trip = standard rate, no premium.\n" +
     "SEASONAL PREMIUMS: June/July/August = high season add 10%. December = Christmas period add 15%. Easter weekend add 10%.\n" + +
-    "Real market data: Dartford-Godstone 50pax return avg £825 (£700-£900). Heathrow-Walworth 12pax one-way avg £242. Heathrow-Walworth 18pax one-way avg £461. SE12-O2 15pax return avg £312. London-Luton 13pax one-way avg £270. London-Gatwick 16pax one-way avg £253. Dartford-Piccadilly 13pax one-way avg £394. Bromley-Heathrow 16pax one-way avg £280. Maidstone-London 16pax one-way avg £350. Canterbury-London 16pax one-way avg £450. Birmingham-Manchester 16pax return £583, 30pax return £783. " +
+    "Real market data: Birmingham-Coventry 16pax return avg £331 standard/£433 luxury. Birmingham-Stoke 16pax return avg £361 standard/£474 luxury. Birmingham-Nottingham 16pax return avg £364 standard/£491 luxury. Birmingham-Northampton 16pax return avg £383. Luxury 16-seater commands 25-35% premium over standard. Dartford-Godstone 50pax return avg £825 (£700-£900). Heathrow-Walworth 12pax one-way avg £242. Heathrow-Walworth 18pax one-way avg £461. SE12-O2 15pax return avg £312. London-Luton 13pax one-way avg £270. London-Gatwick 16pax one-way avg £253. Dartford-Piccadilly 13pax one-way avg £394. Bromley-Heathrow 16pax one-way avg £280. Maidstone-London 16pax one-way avg £350. Canterbury-London 16pax one-way avg £450. Birmingham-Manchester 16pax return £583, 30pax return £783. " +
     "Hackney-Luton 23pax return £1194. Manchester-Leeds 30pax return £728, 16pax return £350. " +
     "Reading-Birmingham 30pax return £952. Brixton-Windsor 16pax return £510. " +
     "Peckham-Heathrow 14pax one-way £470. London-Stansted 12pax one-way £275. " +
@@ -948,8 +964,8 @@ export default function App() {
       {result && (
         <div style={C}>
 
-          {/* New / Regular toggle */}
-          <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+          {/* New / Regular / Luxury toggle */}
+          <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
             <button onClick={() => setIsReg(false)} style={{ flex:1, padding:8, borderRadius:7, border:"none", fontWeight:700, fontSize:13, cursor:"pointer", background:!isReg?"#f59e0b":"#21262d", color:!isReg?"#000":"#7d8590" }}>New Customer</button>
             <button onClick={() => setIsReg(true)}  style={{ flex:1, padding:8, borderRadius:7, border:"none", fontWeight:700, fontSize:13, cursor:"pointer", background:isReg?"#7c3aed":"#21262d",  color:isReg?"#fff":"#7d8590"  }}>Regular (10% off)</button>
           </div>
