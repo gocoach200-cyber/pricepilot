@@ -142,18 +142,15 @@
         <option value="16-seater">16-seater minibus</option>
         <option value="24-seater">24-seater minibus</option>
         <option value="32-seater">32-seater coach</option>
+        <option value="35-seater">35-seater coach</option>
         <option value="49-seater">49-seater coach</option>
+        <option value="53-seater">53-seater coach</option>
+        <option value="60-seater">60-seater coach</option>
+        <option value="63-seater">63-seater coach</option>
         <option value="mixed">Mixed fleet</option>
       </select>
 
-      <label>How many years have you been operating?</label>
-      <select id="yearsExp">
-        <option value="">Select...</option>
-        <option value="0-2">Less than 2 years</option>
-        <option value="2-5">2-5 years</option>
-        <option value="5-10">5-10 years</option>
-        <option value="10+">10+ years</option>
-      </select>
+
 
       <button class="btn" onclick="goToStep(2)" id="step1btn">Continue to Pricing Questions</button>
     </div>
@@ -265,6 +262,10 @@ const QUESTIONS = {
     { from:"Birmingham City Centre", to:"Wembley Stadium",        pax:16, type:"Same day return", note:"Football or concert" },
     { from:"Birmingham City Centre", to:"Nottingham NG1",         pax:16, type:"Same day return", note:"Day trip, approx 50 miles" },
     { from:"Birmingham City Centre", to:"Stratford upon Avon CV37",pax:16,type:"Same day return", note:"Day trip, approx 25 miles" },
+    { from:"Birmingham City Centre", to:"Manchester Piccadilly",  pax:30, type:"Same day return", note:"Larger group, 30-35 seater" },
+    { from:"Birmingham City Centre", to:"London Victoria",        pax:30, type:"Same day return", note:"Larger group, 30-35 seater" },
+    { from:"Birmingham City Centre", to:"Manchester Piccadilly",  pax:50, type:"Same day return", note:"Large coach, 49-63 seater" },
+    { from:"Birmingham City Centre", to:"London Victoria",        pax:50, type:"Same day return", note:"Large coach, long distance" },
   ],
   "Manchester": [
     { from:"Manchester City Centre", to:"Leeds City Centre",      pax:16, type:"Same day return", note:"Day trip" },
@@ -315,16 +316,16 @@ const QUESTIONS = {
     { from:"Bristol City Centre", to:"Cardiff City Centre",    pax:30, type:"Same day return", note:"Larger group", maxVehicle:49 },
   ],
   "default": [
-    { from:"Your city centre", to:"Heathrow Airport",      pax:16, type:"One way",         note:"Airport transfer, early morning" },
-    { from:"Your city centre", to:"Gatwick Airport",        pax:16, type:"One way",         note:"Airport transfer" },
-    { from:"Your city centre", to:"Central London",         pax:16, type:"Same day return", note:"Day trip, 9am-6pm" },
-    { from:"Your city centre", to:"Wembley Stadium",        pax:16, type:"Same day return", note:"Football or concert" },
+    { from:"Your city centre", to:"Nearest airport",        pax:16, type:"One way",         note:"Airport transfer, early morning" },
+    { from:"Your city centre", to:"Second nearest airport", pax:16, type:"One way",         note:"Airport transfer" },
+    { from:"Your city centre", to:"Nearest town 5-10 miles",pax:16, type:"Same day return", note:"Short local journey" },
+    { from:"Your city centre", to:"Nearest town 10-15 miles",pax:16,type:"Same day return", note:"Local journey" },
     { from:"Your city centre", to:"Nearest major city",     pax:16, type:"Same day return", note:"Day trip" },
+    { from:"Your city centre", to:"Central London",         pax:16, type:"Same day return", note:"Day trip to London" },
+    { from:"Your city centre", to:"Wembley Stadium",        pax:16, type:"Same day return", note:"Football or concert" },
     { from:"Your city centre", to:"Local event venue",      pax:16, type:"Same day return", note:"Evening event" },
-    { from:"Your city centre", to:"Heathrow Airport",       pax:30, type:"One way",         note:"Larger group airport transfer" },
-    { from:"Your city centre", to:"Central London",         pax:30, type:"Same day return", note:"Larger group day trip" },
-    { from:"Your city centre", to:"Heathrow Airport",       pax:50, type:"One way",         note:"Large group, 49-seater coach" },
-    { from:"Your city centre", to:"Nearest airport",        pax:16, type:"Return diff day", note:"Airport drop and collect" },
+    { from:"Your city centre", to:"Nearest major city",     pax:30, type:"Same day return", note:"Larger group day trip" },
+    { from:"Your city centre", to:"Nearest airport",        pax:30, type:"One way",         note:"Larger group airport transfer" },
   ]
 };
 
@@ -361,20 +362,48 @@ function getVehiclePax(vehicle) {
   if (vehicle === '16-seater') return 16;
   if (vehicle === '24-seater') return 24;
   if (vehicle === '32-seater') return 32;
+  if (vehicle === '35-seater') return 35;
   if (vehicle === '49-seater') return 49;
-  return null;
+  if (vehicle === '53-seater') return 53;
+  if (vehicle === '60-seater') return 60;
+  if (vehicle === '63-seater') return 63;
+  return null; // mixed fleet - show all
+}
+
+function getVehicleGroup(pax) {
+  if (!pax) return 'all';
+  if (pax <= 12)  return 'small';   // 8, 12
+  if (pax <= 20)  return 'medium';  // 16
+  if (pax <= 28)  return 'large';   // 24
+  if (pax <= 40)  return 'coach';   // 32, 35
+  return 'bigcoach';                // 49, 53, 60, 63
 }
 
 function renderQuestions(city) {
   const allQuestions = QUESTIONS[city] || QUESTIONS['default'];
   const vehicle = document.getElementById('vehicleSize').value;
   const vehiclePax = getVehiclePax(vehicle);
+  const group = getVehicleGroup(vehiclePax);
 
   let questions;
-  if (!vehiclePax) {
+  if (group === 'all') {
     questions = allQuestions;
+  } else if (group === 'small') {
+    questions = allQuestions.filter(q => q.pax <= 14);
+    if (questions.length < 3) questions = allQuestions.filter(q => q.pax <= 20);
+  } else if (group === 'medium') {
+    questions = allQuestions.filter(q => q.pax >= 13 && q.pax <= 20);
+    if (questions.length < 3) questions = allQuestions;
+  } else if (group === 'large') {
+    questions = allQuestions.filter(q => q.pax >= 20 && q.pax <= 30);
+    if (questions.length < 3) questions = allQuestions.filter(q => q.pax <= 30);
+  } else if (group === 'coach') {
+    questions = allQuestions.filter(q => q.pax >= 28 && q.pax <= 40);
+    if (questions.length < 3) questions = allQuestions.filter(q => q.pax >= 16);
   } else {
-    questions = allQuestions.filter(q => Math.abs(q.pax - vehiclePax) <= 4);
+    // bigcoach - 49+
+    questions = allQuestions.filter(q => q.pax >= 40);
+    if (questions.length < 3) questions = allQuestions.filter(q => q.pax >= 30);
     if (questions.length < 3) questions = allQuestions;
   }
   questions = questions.slice(0, 10);
