@@ -355,16 +355,39 @@ function goToStep(step) {
   window.scrollTo(0,0);
 }
 
+function getVehiclePax(vehicle) {
+  if (vehicle === '8-seater')  return 8;
+  if (vehicle === '12-seater') return 12;
+  if (vehicle === '16-seater') return 16;
+  if (vehicle === '24-seater') return 24;
+  if (vehicle === '32-seater') return 32;
+  if (vehicle === '49-seater') return 49;
+  return null;
+}
+
 function renderQuestions(city) {
-  const questions = QUESTIONS[city] || QUESTIONS['default'];
+  const allQuestions = QUESTIONS[city] || QUESTIONS['default'];
+  const vehicle = document.getElementById('vehicleSize').value;
+  const vehiclePax = getVehiclePax(vehicle);
+
+  let questions;
+  if (!vehiclePax) {
+    questions = allQuestions;
+  } else {
+    questions = allQuestions.filter(q => Math.abs(q.pax - vehiclePax) <= 4);
+    if (questions.length < 3) questions = allQuestions;
+  }
+  questions = questions.slice(0, 10);
+
   const container = document.getElementById('questionsContainer');
   container.innerHTML = '';
+  const displayPax = vehiclePax || 16;
   questions.forEach((q, i) => {
     container.innerHTML += `
       <div class="job-card">
         <div style="font-size:10px;color:#f59e0b;text-transform:uppercase;font-weight:700;margin-bottom:6px;">Job ${i+1} of ${questions.length}</div>
         <div class="job-route">${q.from} → ${q.to}</div>
-        <div class="job-details">${q.pax} passengers · ${q.type} · ${q.note}</div>
+        <div class="job-details">${displayPax} passengers · ${q.type} · ${q.note}</div>
         <label style="margin-top:4px;">Your price for this job (£)</label>
         <div class="price-input-wrap">
           <span>£</span>
