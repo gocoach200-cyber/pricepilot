@@ -66,7 +66,7 @@
   <!-- STEP 0: Welcome -->
   <div class="step active" id="step0">
     <div class="card">
-      <div style="font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:700;">Early Access — Launching Wednesday 16th April</div>
+      <div style="font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:700;">Early Access — Launching Tuesday 21st April</div>
       <h2>Get free access to PricePilot before public launch</h2>
       <p style="margin-top:8px;">PricePilot shows minibus and coach operators <strong style="color:#f0f6fc;">what customers are actually willing to pay</strong> for any job — not just what other operators charge.</p>
 
@@ -91,7 +91,7 @@
 
       <div style="background:#f59e0b11;border:1px solid #f59e0b33;border-radius:8px;padding:14px;margin-bottom:16px;">
         <div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:4px;">What we need from you</div>
-        <div style="font-size:12px;color:#7d8590;line-height:1.6;">To make PricePilot accurate for your area, we need real pricing data from real operators. Answer 5 quick pricing questions — takes about 2 minutes — and get free access on <strong style="color:#f0f6fc;">launch day, Wednesday 16th April.</strong></div>
+        <div style="font-size:12px;color:#7d8590;line-height:1.6;">To make PricePilot accurate for your area, we need real pricing data from real operators. Answer 5 quick pricing questions — takes about 2 minutes — and get free access on <strong style="color:#f0f6fc;">launch day, Tuesday 21st April.</strong></div>
       </div>
 
       <div class="privacy-note">
@@ -178,12 +178,12 @@
     <div class="card" style="text-align:center;">
       <div class="success-icon">🎉</div>
       <h2>Thank you! You're in.</h2>
-      <p style="margin-top:8px;">Your pricing data has been submitted. You will get full access to PricePilot on <strong style="color:#f59e0b;">Wednesday 16th April 2026</strong> — launch day.</p>
+      <p style="margin-top:8px;">Your pricing data has been submitted. You will get full access to PricePilot on <strong style="color:#f59e0b;">Tuesday 21st April 2026</strong> — launch day.</p>
 
       <div style="background:#f59e0b11;border:1px solid #f59e0b33;border-radius:8px;padding:16px;margin:16px 0;text-align:left;">
         <div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:8px;">You are on the list</div>
         <div style="font-size:12px;color:#7d8590;line-height:1.6;">
-          PricePilot goes live on <strong style="color:#f0f6fc;">Wednesday 16th April 2026.</strong> 
+          PricePilot goes live on <strong style="color:#f0f6fc;">Tuesday 21st April 2026.</strong> 
           You will be among the first operators to get access. 
           We will be in touch on launch day.
         </div>
@@ -422,7 +422,7 @@ async function submitSurvey() {
 }
 
 function sharesurvey() {
-  const msg = "Hi, there's a free tool launching on Wednesday 16th April for minibus and coach operators — it shows you what customers are actually willing to pay for any job in your area. To get early access before launch you just answer 5 quick pricing questions. Takes 2 minutes: " + window.location.href;
+  const msg = "Hi, there's a free tool launching on Tuesday 21st April for minibus and coach operators — it shows you what customers are actually willing to pay for any job in your area. To get early access before launch you just answer 5 quick pricing questions. Takes 2 minutes: " + window.location.href;
   navigator.clipboard.writeText(msg).then(() => {
     document.getElementById('shareBtn').textContent = 'Copied! Paste into WhatsApp';
     setTimeout(() => { document.getElementById('shareBtn').textContent = 'Share Survey with Another Operator'; }, 3000);
@@ -432,10 +432,10 @@ function sharesurvey() {
 // Simulate signup count
 
 // Countdown to launch
-const launch = new Date('2026-04-16');
+const launch = new Date('2026-04-21');
 const now = new Date();
 const days = Math.ceil((launch - now) / (1000 * 60 * 60 * 24));
-document.getElementById('signupCount').textContent = 'Launching in ' + days + ' day' + (days !== 1 ? 's' : '') + ' — Wednesday 16th April 2026';
+document.getElementById('signupCount').textContent = 'Launching in ' + days + ' day' + (days !== 1 ? 's' : '') + ' — Tuesday 21st April 2026';
 
 </script>
 </body>
