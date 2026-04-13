@@ -11,9 +11,24 @@ const supabase = createClient(
 // ─── Config ───────────────────────────────────────────────────────────────────
 const DRIVER_RATE    = 14.50;
 const FUEL_PER_LITRE = 1.75;  // current diesel price per litre
-const MILES_PER_LITRE = 6;    // realistic for loaded minibus
 const RUNNING_UPLIFT  = 1.25; // 25% uplift for wear, tyres, maintenance
-const FUEL_PER_MILE   = (FUEL_PER_LITRE / MILES_PER_LITRE) * RUNNING_UPLIFT; // ~36p per mile
+
+// Miles per litre by vehicle size (realistic loaded figures)
+const VEHICLE_MPL = {
+  "8-seater":   8,   // ~18mpg realistic loaded
+  "12-seater":  7,   // ~16mpg realistic loaded
+  "16-seater":  5,   // ~11mpg realistic loaded - gives ~48p/mile
+  "24-seater":  4.5, // ~10mpg
+  "32-seater":  4,   // ~9mpg
+  "35-seater":  3.5, // ~8mpg
+  "49-seater":  3,   // ~7mpg
+  "53-seater":  2.8, // ~6.5mpg
+  "60-seater":  2.5, // ~6mpg
+  "63-seater":  3,   // ~7mpg
+};
+
+const getMPL = (vehicle) => VEHICLE_MPL[vehicle] || 6;
+const FUEL_PER_MILE = (FUEL_PER_LITRE / 6) * RUNNING_UPLIFT; // default ~36p/mile
 const API_KEY = process.env.REACT_APP_API_KEY;
 
 // ─── Survey Questions ────────────────────────────────────────────────────────
@@ -601,8 +616,10 @@ export default function App() {
   const totalMiles = trip === "return-different" ? oneWayMiles * 4
                    : trip === "return"           ? oneWayMiles * 2
                    : oneWayMiles;
-  const fuel          = Math.round(totalMiles * FUEL_PER_MILE);
-  const litres        = Math.round(totalMiles / MILES_PER_LITRE);
+  const vehicleMPL    = getMPL(result ? result.vehicle : "16-seater");
+  const fuelPerMile   = (FUEL_PER_LITRE / vehicleMPL) * RUNNING_UPLIFT;
+  const fuel          = Math.round(totalMiles * fuelPerMile);
+  const litres        = Math.round(totalMiles / vehicleMPL);
 
   const driverHours   = (() => {
     if (trip === "return-different") {
@@ -1061,7 +1078,7 @@ export default function App() {
           {/* Cost breakdown */}
           <div style={{ background:"#0d1117", borderRadius:8, padding:14, marginBottom:16 }}>
             <div style={{ fontSize:11, fontWeight:700, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:10 }}>Operator Cost Estimate</div>
-            <BRow label={"Fuel + running costs (" + totalMiles + " mi, ~" + litres + " litres)"} value={fmt(fuel)} />
+            <BRow label={"Fuel + running costs (" + totalMiles + " mi, ~" + litres + "L, " + Math.round(fuelPerMile * 100) + "p/mi)"} value={fmt(fuel)} />
             <BRow label={"Driver (" + driverHours + " hrs at £14.50/hr" + (driverCost === 60 ? ", min charge applied" : "") + ")"} value={fmt(driverCost)} />
             <BRow label="Total est. costs"                                        value={fmt(costs)} />
             <BRow label="Min floor price (never go below)"                        value={fmt(floorPrice)} highlight />
