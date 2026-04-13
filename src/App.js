@@ -745,16 +745,6 @@ export default function App() {
             </div>
           </div>
         </div>
-
-        {/* Share Survey Button */}
-        <div style={{ background:"#f59e0b11", border:"1px solid #f59e0b44", borderRadius:10, padding:"14px 16px", marginBottom:4 }}>
-          <div style={{ fontSize:13, fontWeight:700, color:"#f59e0b", marginBottom:4 }}>Know another operator?</div>
-          <div style={{ fontSize:12, color:"#7d8590", marginBottom:10 }}>Share the survey — the more operators who join before launch, the more accurate the pricing for your area.</div>
-          <button onClick={copyShareSurvey}
-            style={{ width:"100%", padding:"10px 16px", background:surveyCopied?"#16a34a":"#f59e0b", border:"none", borderRadius:8, color:surveyCopied?"#fff":"#000", fontWeight:700, fontSize:13, cursor:"pointer" }}>
-            {surveyCopied ? "Copied! Paste into WhatsApp ✓" : "Share Survey with Another Operator"}
-          </button>
-        </div>
       </div>
 
       {/* ── Shared Quote Banner ── */}

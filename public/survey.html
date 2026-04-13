@@ -222,121 +222,72 @@
 </div>
 
 <script>
-// ─── Questions by city ────────────────────────────────────────────────────────
+// ─── Questions by city — always 5 in order: Airport, Short, Across Town, ~100 miles, ~200 miles ───
 const QUESTIONS = {
   "London": [
-    { from:"Any London postcode",  to:"Heathrow Airport",        pax:16, type:"One way",         note:"Airport transfer, early morning" },
-    { from:"Any London postcode",  to:"Gatwick Airport",          pax:16, type:"One way",         note:"Airport transfer" },
-    { from:"Peckham SE15",         to:"Croydon CR0",              pax:16, type:"Same day return", note:"Short local journey, approx 5 miles" },
-    { from:"Lewisham SE13",        to:"Stratford E15",            pax:16, type:"Same day return", note:"Short local journey, approx 8 miles" },
-    { from:"Brixton SW2",          to:"Hackney E8",               pax:16, type:"Same day return", note:"Cross London, approx 10 miles" },
-    { from:"Bromley BR1",          to:"Greenwich SE10",           pax:16, type:"Same day return", note:"Short local journey, approx 7 miles" },
-    { from:"Any London postcode",  to:"O2 Arena",                 pax:16, type:"Same day return", note:"Evening event" },
-    { from:"Any London postcode",  to:"Wembley Stadium",          pax:16, type:"Same day return", note:"Football or concert" },
-    { from:"Any London postcode",  to:"Brighton",                 pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Any London postcode",  to:"Birmingham City Centre",   pax:16, type:"Same day return", note:"Long distance day trip" },
-    { from:"Any London postcode",  to:"Manchester Piccadilly",    pax:30, type:"Same day return", note:"Larger group 30-35 seater" },
-    { from:"Any London postcode",  to:"Birmingham City Centre",   pax:30, type:"Same day return", note:"Larger group 30-35 seater" },
-    { from:"Any London postcode",  to:"Manchester Piccadilly",    pax:50, type:"Same day return", note:"Large coach 49-63 seater" },
-    { from:"Any London postcode",  to:"Edinburgh City Centre",    pax:50, type:"Same day return", note:"Large coach long distance" },
-    { from:"Any London postcode",  to:"Heathrow Airport",         pax:50, type:"One way",         note:"Large coach airport transfer" },
+    { from:"Any London postcode",   to:"Heathrow Airport",         type:"One way",         note:"Airport transfer, early morning"        },
+    { from:"Lewisham SE13",         to:"Stratford E15",            type:"Same day return", note:"Short local journey, approx 8 miles"    },
+    { from:"Brixton SW2",           to:"Hackney E8",               type:"Same day return", note:"Across town, approx 10 miles"           },
+    { from:"Any London postcode",   to:"Birmingham City Centre",   type:"Same day return", note:"~120 mile journey, full day return"      },
+    { from:"Any London postcode",   to:"Manchester Piccadilly",    type:"Same day return", note:"~200 mile journey, full day return"      },
   ],
   "Kent": [
-    { from:"Dartford DA1",            to:"Heathrow Airport",      pax:16, type:"One way",         note:"Airport transfer, early morning" },
-    { from:"Bromley BR1",             to:"Gatwick Airport",       pax:16, type:"One way",         note:"Airport transfer" },
-    { from:"Dartford DA1",            to:"Gravesend DA11",        pax:16, type:"Same day return", note:"Short local journey, approx 6 miles" },
-    { from:"Bromley BR1",             to:"Croydon CR0",           pax:16, type:"Same day return", note:"Short local journey, approx 5 miles" },
-    { from:"Maidstone ME14",          to:"Chatham ME4",           pax:16, type:"Same day return", note:"Short local journey, approx 8 miles" },
-    { from:"Dartford / Bromley area", to:"Central London",        pax:16, type:"Same day return", note:"Day trip, approx 18-25 miles" },
-    { from:"Dartford / Bromley area", to:"O2 Arena",              pax:16, type:"Same day return", note:"Evening event" },
-    { from:"Dartford / Bromley area", to:"Wembley Stadium",       pax:16, type:"Same day return", note:"Football or concert" },
-    { from:"Maidstone / Chatham",     to:"Central London",        pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Canterbury CT1",          to:"Folkestone CT20",       pax:16, type:"Same day return", note:"Local Kent journey, approx 15 miles" },
+    { from:"Dartford DA1",          to:"Heathrow Airport",         type:"One way",         note:"Airport transfer, early morning"        },
+    { from:"Dartford DA1",          to:"Gravesend DA11",           type:"Same day return", note:"Short local journey, approx 6 miles"    },
+    { from:"Bromley BR1",           to:"Central London",           type:"Same day return", note:"Across town / into London, ~20 miles"   },
+    { from:"Dartford / Kent area",  to:"Birmingham City Centre",   type:"Same day return", note:"~120 mile journey, full day return"      },
+    { from:"Dartford / Kent area",  to:"Manchester Piccadilly",    type:"Same day return", note:"~220 mile journey, full day return"      },
   ],
   "Birmingham": [
-    { from:"Birmingham City Centre", to:"Heathrow Airport",       pax:16, type:"One way",         note:"Airport transfer" },
-    { from:"Birmingham B1",          to:"Wolverhampton WV1",      pax:16, type:"Same day return", note:"Short local journey, approx 15 miles" },
-    { from:"Birmingham B1",          to:"Solihull B91",           pax:16, type:"Same day return", note:"Short local journey, approx 8 miles" },
-    { from:"Birmingham B1",          to:"Walsall WS1",            pax:16, type:"Same day return", note:"Short local journey, approx 10 miles" },
-    { from:"Birmingham B1",          to:"Coventry CV1",           pax:16, type:"Same day return", note:"Local journey, approx 20 miles" },
-    { from:"Birmingham City Centre", to:"Manchester Piccadilly",  pax:16, type:"Same day return", note:"Long distance day trip" },
-    { from:"Birmingham City Centre", to:"London Victoria",        pax:16, type:"Same day return", note:"Long distance day trip" },
-    { from:"Birmingham City Centre", to:"Wembley Stadium",        pax:16, type:"Same day return", note:"Football or concert" },
-    { from:"Birmingham City Centre", to:"Nottingham NG1",         pax:16, type:"Same day return", note:"Day trip, approx 50 miles" },
-    { from:"Birmingham City Centre", to:"Stratford upon Avon CV37",pax:16,type:"Same day return", note:"Day trip, approx 25 miles" },
-    { from:"Birmingham City Centre", to:"Manchester Piccadilly",  pax:30, type:"Same day return", note:"Larger group, 30-35 seater" },
-    { from:"Birmingham City Centre", to:"London Victoria",        pax:30, type:"Same day return", note:"Larger group, 30-35 seater" },
-    { from:"Birmingham City Centre", to:"Manchester Piccadilly",  pax:50, type:"Same day return", note:"Large coach, 49-63 seater" },
-    { from:"Birmingham City Centre", to:"London Victoria",        pax:50, type:"Same day return", note:"Large coach, long distance" },
+    { from:"Birmingham City Centre",to:"Heathrow Airport",         type:"One way",         note:"Airport transfer"                       },
+    { from:"Birmingham B1",         to:"Solihull B91",             type:"Same day return", note:"Short local journey, approx 8 miles"    },
+    { from:"Birmingham B1",         to:"Wolverhampton WV1",        type:"Same day return", note:"Across town, approx 15 miles"           },
+    { from:"Birmingham City Centre",to:"London Victoria",          type:"Same day return", note:"~120 mile journey, full day return"      },
+    { from:"Birmingham City Centre",to:"Edinburgh City Centre",    type:"Same day return", note:"~300 mile journey, full day return"      },
   ],
   "Manchester": [
-    { from:"Manchester City Centre", to:"Leeds City Centre",      pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Manchester City Centre", to:"Liverpool City Centre",  pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Manchester City Centre", to:"London Victoria",        pax:16, type:"Same day return", note:"Long distance day trip" },
-    { from:"Manchester City Centre", to:"Manchester Airport",     pax:16, type:"One way",         note:"Airport transfer" },
-    { from:"Manchester City Centre", to:"Wembley Stadium",        pax:16, type:"Same day return", note:"Football match" },
-    { from:"Manchester City Centre", to:"Newcastle City Centre",  pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Manchester City Centre", to:"Birmingham City Centre", pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Manchester City Centre", to:"Leeds City Centre",      pax:30, type:"Same day return", note:"Larger group" },
-    { from:"Manchester City Centre", to:"London Victoria",        pax:30, type:"Same day return", note:"Larger group" },
-    { from:"Manchester City Centre", to:"Manchester Airport",     pax:50, type:"One way",         note:"Large group, 49-seater coach" },
+    { from:"Manchester City Centre",to:"Manchester Airport",       type:"One way",         note:"Airport transfer"                       },
+    { from:"Manchester City Centre",to:"Salford M5",               type:"Same day return", note:"Short local journey, approx 5 miles"    },
+    { from:"Manchester City Centre",to:"Stockport SK1",            type:"Same day return", note:"Across town, approx 8 miles"            },
+    { from:"Manchester City Centre",to:"Birmingham City Centre",   type:"Same day return", note:"~85 mile journey, full day return"       },
+    { from:"Manchester City Centre",to:"London Victoria",          type:"Same day return", note:"~200 mile journey, full day return"      },
   ],
   "Leeds": [
-    { from:"Leeds City Centre", to:"Manchester Piccadilly",  pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Leeds City Centre", to:"Newcastle City Centre",  pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Leeds City Centre", to:"London Victoria",        pax:16, type:"Same day return", note:"Long distance day trip" },
-    { from:"Leeds City Centre", to:"Wembley Stadium",        pax:16, type:"Same day return", note:"Football or concert" },
-    { from:"Leeds City Centre", to:"Leeds Bradford Airport", pax:16, type:"One way",         note:"Airport transfer" },
-    { from:"Leeds City Centre", to:"Birmingham City Centre", pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Leeds City Centre", to:"Liverpool City Centre",  pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Leeds City Centre", to:"Bradford City Centre",   pax:16, type:"Same day return", note:"Local journey" },
-    { from:"Leeds City Centre", to:"Manchester Piccadilly",  pax:30, type:"Same day return", note:"Larger group", maxVehicle:49 },
-    { from:"Leeds City Centre", to:"London Victoria",        pax:30, type:"Same day return", note:"Larger group", maxVehicle:49 },
+    { from:"Leeds City Centre",     to:"Leeds Bradford Airport",   type:"One way",         note:"Airport transfer"                       },
+    { from:"Leeds City Centre",     to:"Bradford City Centre",     type:"Same day return", note:"Short local journey, approx 9 miles"    },
+    { from:"Leeds City Centre",     to:"Sheffield City Centre",    type:"Same day return", note:"Across town, approx 35 miles"           },
+    { from:"Leeds City Centre",     to:"Birmingham City Centre",   type:"Same day return", note:"~115 mile journey, full day return"      },
+    { from:"Leeds City Centre",     to:"London Victoria",          type:"Same day return", note:"~195 mile journey, full day return"      },
   ],
   "Oxford": [
-    { from:"Oxford / Aylesbury area", to:"Heathrow Airport",      pax:16, type:"One way",         note:"Airport transfer" },
-    { from:"Oxford / Aylesbury area", to:"Central London",        pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Oxford / Aylesbury area", to:"Wembley Stadium",       pax:16, type:"Same day return", note:"Football or concert" },
-    { from:"Oxford / Aylesbury area", to:"Birmingham City Centre",pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Oxford / Aylesbury area", to:"Bristol City Centre",   pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Oxford / Aylesbury area", to:"Milton Keynes",         pax:16, type:"Same day return", note:"Local journey" },
-    { from:"High Wycombe area",       to:"Central London",        pax:16, type:"Same day return", note:"Day trip" },
-    { from:"High Wycombe area",       to:"Oxford City Centre",    pax:16, type:"Same day return", note:"Local journey" },
-    { from:"Oxford / Aylesbury area", to:"Central London",        pax:30, type:"Same day return", note:"Larger group", maxVehicle:49 },
-    { from:"Oxford / Aylesbury area", to:"Heathrow Airport",      pax:30, type:"One way",         note:"Larger group airport", maxVehicle:49 },
+    { from:"Oxford / Aylesbury area",to:"Heathrow Airport",        type:"One way",         note:"Airport transfer"                       },
+    { from:"Oxford City Centre",    to:"Bicester OX26",            type:"Same day return", note:"Short local journey, approx 12 miles"   },
+    { from:"Oxford / Aylesbury area",to:"Milton Keynes",           type:"Same day return", note:"Across town, approx 25 miles"           },
+    { from:"Oxford / Aylesbury area",to:"Birmingham City Centre",  type:"Same day return", note:"~65 mile journey, full day return"       },
+    { from:"Oxford / Aylesbury area",to:"Manchester Piccadilly",   type:"Same day return", note:"~165 mile journey, full day return"      },
   ],
   "Bristol": [
-    { from:"Bristol City Centre", to:"London Victoria",        pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Bristol City Centre", to:"Birmingham City Centre", pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Bristol City Centre", to:"Cardiff City Centre",    pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Bristol City Centre", to:"Bristol Airport",        pax:16, type:"One way",         note:"Airport transfer" },
-    { from:"Bristol City Centre", to:"Wembley Stadium",        pax:16, type:"Same day return", note:"Football or concert" },
-    { from:"Bristol City Centre", to:"Manchester Piccadilly",  pax:16, type:"Same day return", note:"Long distance day trip" },
-    { from:"Bristol City Centre", to:"Bath City Centre",       pax:16, type:"Same day return", note:"Local journey" },
-    { from:"Bristol City Centre", to:"Swindon Town Centre",    pax:16, type:"Same day return", note:"Local journey" },
-    { from:"Bristol City Centre", to:"London Victoria",        pax:30, type:"Same day return", note:"Larger group", maxVehicle:49 },
-    { from:"Bristol City Centre", to:"Cardiff City Centre",    pax:30, type:"Same day return", note:"Larger group", maxVehicle:49 },
+    { from:"Bristol City Centre",   to:"Bristol Airport",          type:"One way",         note:"Airport transfer"                       },
+    { from:"Bristol City Centre",   to:"Bath City Centre",         type:"Same day return", note:"Short local journey, approx 12 miles"   },
+    { from:"Bristol City Centre",   to:"Cardiff City Centre",      type:"Same day return", note:"Across town, approx 44 miles"           },
+    { from:"Bristol City Centre",   to:"London Victoria",          type:"Same day return", note:"~115 mile journey, full day return"      },
+    { from:"Bristol City Centre",   to:"Manchester Piccadilly",    type:"Same day return", note:"~170 mile journey, full day return"      },
   ],
   "default": [
-    { from:"Your city centre", to:"Nearest airport",        pax:16, type:"One way",         note:"Airport transfer, early morning" },
-    { from:"Your city centre", to:"Second nearest airport", pax:16, type:"One way",         note:"Airport transfer" },
-    { from:"Your city centre", to:"Nearest town 5-10 miles",pax:16, type:"Same day return", note:"Short local journey" },
-    { from:"Your city centre", to:"Nearest town 10-15 miles",pax:16,type:"Same day return", note:"Local journey" },
-    { from:"Your city centre", to:"Nearest major city",     pax:16, type:"Same day return", note:"Day trip" },
-    { from:"Your city centre", to:"Central London",         pax:16, type:"Same day return", note:"Day trip to London" },
-    { from:"Your city centre", to:"Wembley Stadium",        pax:16, type:"Same day return", note:"Football or concert" },
-    { from:"Your city centre", to:"Local event venue",      pax:16, type:"Same day return", note:"Evening event" },
-    { from:"Your city centre", to:"Nearest major city",     pax:30, type:"Same day return", note:"Larger group day trip" },
-    { from:"Your city centre", to:"Nearest airport",        pax:30, type:"One way",         note:"Larger group airport transfer" },
+    { from:"Your city centre",      to:"Nearest airport",          type:"One way",         note:"Airport transfer, early morning"        },
+    { from:"Your city centre",      to:"Nearest town 5-10 miles",  type:"Same day return", note:"Short local journey"                    },
+    { from:"Your city centre",      to:"Nearest town 15-20 miles", type:"Same day return", note:"Across town journey"                    },
+    { from:"Your city centre",      to:"Nearest major city",       type:"Same day return", note:"~100 mile journey, full day return"      },
+    { from:"Your city centre",      to:"London Victoria",          type:"Same day return", note:"~200 mile journey, full day return"      },
   ]
 };
 
 let currentStep = 0;
 let answers = [];
 let selectedCity = "";
+let renderedQuestions = []; // stores the exact 5 questions shown so submitSurvey reads the right ones
 
 function goToStep(step) {
-  // Validate step 1
   if (step === 2) {
     const email = document.getElementById('operatorEmail').value;
     const city = document.getElementById('operatorCity').value;
@@ -369,54 +320,23 @@ function getVehiclePax(vehicle) {
   if (vehicle === '53-seater') return 53;
   if (vehicle === '60-seater') return 60;
   if (vehicle === '63-seater') return 63;
-  return null; // mixed fleet - show all
-}
-
-function getVehicleGroup(pax) {
-  if (!pax) return 'all';
-  if (pax <= 12)  return 'small';   // 8, 12
-  if (pax <= 20)  return 'medium';  // 16
-  if (pax <= 28)  return 'large';   // 24
-  if (pax <= 40)  return 'coach';   // 32, 35
-  return 'bigcoach';                // 49, 53, 60, 63
+  return 16;
 }
 
 function renderQuestions(city) {
-  const allQuestions = QUESTIONS[city] || QUESTIONS['default'];
+  const questions = QUESTIONS[city] || QUESTIONS['default'];
   const vehicle = document.getElementById('vehicleSize').value;
-  const vehiclePax = getVehiclePax(vehicle);
-  const group = getVehicleGroup(vehiclePax);
+  const displayPax = getVehiclePax(vehicle);
 
-  let questions;
-  if (group === 'all') {
-    questions = allQuestions;
-  } else if (group === 'small') {
-    questions = allQuestions.filter(q => q.pax <= 14);
-    if (questions.length < 3) questions = allQuestions.filter(q => q.pax <= 20);
-  } else if (group === 'medium') {
-    questions = allQuestions.filter(q => q.pax >= 13 && q.pax <= 20);
-    if (questions.length < 3) questions = allQuestions;
-  } else if (group === 'large') {
-    questions = allQuestions.filter(q => q.pax >= 20 && q.pax <= 30);
-    if (questions.length < 3) questions = allQuestions.filter(q => q.pax <= 30);
-  } else if (group === 'coach') {
-    questions = allQuestions.filter(q => q.pax >= 28 && q.pax <= 40);
-    if (questions.length < 3) questions = allQuestions.filter(q => q.pax >= 16);
-  } else {
-    // bigcoach - 49+
-    questions = allQuestions.filter(q => q.pax >= 40);
-    if (questions.length < 3) questions = allQuestions.filter(q => q.pax >= 30);
-    if (questions.length < 3) questions = allQuestions;
-  }
-  questions = questions.slice(0, 5);
+  // Store globally so submitSurvey reads the exact same questions
+  renderedQuestions = questions;
 
   const container = document.getElementById('questionsContainer');
   container.innerHTML = '';
-  const displayPax = vehiclePax || 16;
   questions.forEach((q, i) => {
     container.innerHTML += `
       <div class="job-card">
-        <div style="font-size:10px;color:#f59e0b;text-transform:uppercase;font-weight:700;margin-bottom:6px;">Job ${i+1} of ${questions.length}</div>
+        <div style="font-size:10px;color:#f59e0b;text-transform:uppercase;font-weight:700;margin-bottom:6px;">Question ${i+1} of ${questions.length}</div>
         <div class="job-route">${q.from} → ${q.to}</div>
         <div class="job-details">${displayPax} passengers · ${q.type} · ${q.note}</div>
         <label style="margin-top:4px;">Your price for this job (£)</label>
@@ -430,12 +350,12 @@ function renderQuestions(city) {
 }
 
 async function submitSurvey() {
-  const questions = QUESTIONS[selectedCity] || QUESTIONS['default'];
   answers = [];
   let allFilled = true;
 
-  questions.forEach((q, i) => {
-    const val = document.getElementById('q'+i).value;
+  renderedQuestions.forEach((q, i) => {
+    const el = document.getElementById('q'+i);
+    const val = el ? el.value : '';
     if (!val) allFilled = false;
     answers.push({ ...q, price: parseInt(val) || 0 });
   });
@@ -473,6 +393,7 @@ async function submitSurvey() {
     });
 
     // Save survey answers
+    const vehiclePaxSave = getVehiclePax(document.getElementById('vehicleSize').value) || 16;
     for (const a of answers) {
       await fetch(SUPABASE_URL + '/rest/v1/survey_answers', {
         method: 'POST',
@@ -487,7 +408,7 @@ async function submitSurvey() {
           vehicle_size: document.getElementById('vehicleSize').value,
           from_location: a.from,
           to_location: a.to,
-          passengers: a.pax,
+          passengers: vehiclePaxSave,
           trip_type: a.type,
           quoted_price: a.price
         })
