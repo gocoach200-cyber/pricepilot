@@ -148,6 +148,17 @@ const MARKET_DATA = [
   { from:"birmingham", to:"stoke",         pax:16, type:"return",   avg:474,  low:420,  high:520,  note:"luxury" },
   { from:"birmingham", to:"nottingham",    pax:16, type:"return",   avg:364,  low:320,  high:400  },
   { from:"birmingham", to:"nottingham",    pax:16, type:"return",   avg:491,  low:475,  high:500,  note:"luxury" },
+  // Short London routes (real operator data Apr 2026)
+  { from:"stratford",  to:"london zoo",    pax:16, type:"return",   avg:553,  low:425,  high:695  },
+  { from:"stratford",  to:"london zoo",    pax:33, type:"return",   avg:726,  low:630,  high:859  },
+  { from:"stratford",  to:"london zoo",    pax:35, type:"return",   avg:678,  low:600,  high:750  },
+  { from:"stratford",  to:"london zoo",    pax:37, type:"return",   avg:718,  low:650,  high:850  },
+  { from:"stratford",  to:"london zoo",    pax:39, type:"return",   avg:807,  low:700,  high:910  },
+  { from:"stratford",  to:"london zoo",    pax:49, type:"return",   avg:808,  low:750,  high:850  },
+  { from:"greenwich",  to:"kingston",      pax:16, type:"return",   avg:429,  low:320,  high:550  },
+  { from:"greenwich",  to:"kingston",      pax:33, type:"return",   avg:618,  low:500,  high:700  },
+  { from:"greenwich",  to:"kingston",      pax:35, type:"return",   avg:816,  low:750,  high:895  },
+  { from:"greenwich",  to:"kingston",      pax:37, type:"return",   avg:876,  low:800,  high:995  },
 ];
 
 // Known UK road distances (miles, one way)
@@ -376,6 +387,42 @@ const isLondon = (a, b) =>
   ["london","heathrow","gatwick","stansted","wembley","luton","canary wharf","o2","brixton","peckham","hackney","camden","islington"]
   .some(k => (a + b).toLowerCase().includes(k));
 
+// Short London route minimum floor — prices by vehicle for under-25 mile return jobs in London
+const LONDON_SHORT_FLOOR = {
+  "8-seater":  320,
+  "12-seater": 380,
+  "16-seater": 450,
+  "24-seater": 550,
+  "32-seater": 620,
+  "35-seater": 650,
+  "49-seater": 750,
+  "53-seater": 850,
+  "60-seater": 900,
+  "63-seater": 900,
+};
+
+const applyShortRouteFloor = (result, from, to, trip, totalMiles) => {
+  const londonKeywords = ["london","se","sw","e1","e2","e3","e4","e5","e6","e7","e8","e9","e10","e11","e12","e13","e14","e15","e16","e17","e18","n1","n2","n3","n4","n5","n6","n7","n8","n9","n10","nw","w1","w2","w3","w4","w5","w6","w7","w8","w9","wc","ec","brixton","peckham","hackney","lewisham","greenwich","woolwich","stratford","croydon","bromley","brent","islington","camden","hackney","bethnal","dalston","deptford","catford","eltham","sidcup"];
+  const fromL = from.toLowerCase();
+  const toL = to.toLowerCase();
+  const isLondonRoute = londonKeywords.some(k => fromL.includes(k) || toL.includes(k));
+  if (!isLondonRoute) return result;
+  if (trip !== "return") return result;
+  if (totalMiles > 30) return result;
+  const floor = LONDON_SHORT_FLOOR[result.vehicle] || 450;
+  if (result.price < floor) {
+    const uplift = floor / result.price;
+    return {
+      ...result,
+      price: floor,
+      low:   Math.round(result.low  * uplift),
+      high:  Math.round(result.high * uplift),
+      notes: (result.notes || "") + " Short London return job — minimum day rate applied."
+    };
+  }
+  return result;
+};
+
 const waMsg = (from, to, pax, date, price, vehicle) => {
   const d = date ? new Date(date).toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" }) : "";
   return "Hi, thank you for your enquiry!\n\n" +
@@ -404,7 +451,9 @@ const buildPrompt = (from, to, pax, date, time, trip, retDate, retTime, jobs, va
     "Hackney-Luton 23pax return £1194. Manchester-Leeds 30pax return £728, 16pax return £350. " +
     "Reading-Birmingham 30pax return £952. Brixton-Windsor 16pax return £510. " +
     "Peckham-Heathrow 14pax one-way £470. London-Stansted 12pax one-way £275. " +
-    "London-Wembley 16pax return £400. London-O2 16pax return £450.\n" +
+    "London-Wembley 16pax return £400. London-O2 16pax return £450. " +
+    "SHORT LONDON ROUTES (full day return): Stratford E15 to London Zoo NW1 (~9mi one way, ~10hr job): 16-seat avg £553 (£425-£695), 33-seat avg £726, 35-seat avg £678, 37-seat avg £718, 39-seat avg £807, 49-seat avg £808. SE10 Greenwich to Kingston KT1 (~15mi one way, full day return): 16-seat avg £429 (£320-£550), 33-seat avg £618, 35-seat avg £816, 37-seat avg £876 (£800-£995). " +
+    "CRITICAL RULE FOR SHORT URBAN JOBS: Any return job under 25 total miles in London or urban area must NEVER be priced on distance alone. Price is based on time-on-job and vehicle availability. A 16-seater on a 4+ hour London return job minimum is £450. A 35-seater on any London day return minimum is £650. Urban short jobs under 20 miles command the same as a half-day hire minimum regardless of distance.\n" +
     "Return same day = driving both ways + full waiting time. Airport transfer different day = two one-way trips, no accommodation.\n\n" +
     "From: " + from + "\nTo: " + to + "\nPassengers: " + pax + (purpose ? "\nPurpose: " + purpose : "") +
     "\nDate: " + date + " " + time + "\nTrip: " + trip + retLine + milesLine + hist + varLine + luxLine + "\n\n" +
@@ -441,6 +490,7 @@ export default function App() {
   const [quoteId,     setQuoteId]     = useState(null);
   const [quoteCopied, setQuoteCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [surveyCopied, setSurveyCopied] = useState(false);
   const [shareLink,   setShareLink]   = useState("");
   const [linkCopied,  setLinkCopied]  = useState(false);
   const [dayAdvice,   setDayAdvice]   = useState(null);
@@ -491,8 +541,12 @@ export default function App() {
     setError(""); setResult(null); setLogged(false); setIsReg(false); setLoading(true);
     try {
       const res = await callAPI(variation || "normal");
-      setResult(res);
-      try { await supabase.from("quotes").insert({ from_location:from, to_location:to, passengers:parseInt(pax), trip_type:trip, ai_price:res.price }); } catch(se) {}
+      const knownMi = findKnownDistance(from, to);
+      const oneWayMi = manualMiles ? parseInt(manualMiles) : knownMi ? knownMi : (res.miles || 0);
+      const totalMi = trip === "return-different" ? oneWayMi * 4 : trip === "return" ? oneWayMi * 2 : oneWayMi;
+      const adjustedRes = applyShortRouteFloor(res, from, to, trip, totalMi);
+      setResult(adjustedRes);
+      try { await supabase.from("quotes").insert({ from_location:from, to_location:to, passengers:parseInt(pax), trip_type:trip, ai_price:adjustedRes.price }); } catch(se) {}
     }
     catch(e) { setError(e.name === "AbortError" ? "Timed out. Please try again." : "Error: " + e.message); }
     setLoading(false);
@@ -521,6 +575,12 @@ export default function App() {
     const msg = "Hi, thought you'd find this useful — it's a free tool that shows you what customers are actually willing to pay for minibus and coach jobs in your area. No more guessing. Worth a look: https://pricepilot-eight.vercel.app";
     navigator.clipboard.writeText(msg);
     setShareCopied(true); setTimeout(() => setShareCopied(false), 2500);
+  };
+
+  const copyShareSurvey = () => {
+    const msg = "PricePilot launches 16th April — find out what customers will actually pay for coach hire. Take the 2-min survey to get early access: https://pricepilot-eight.vercel.app/survey.html";
+    navigator.clipboard.writeText(msg);
+    setSurveyCopied(true); setTimeout(() => setSurveyCopied(false), 2500);
   };
 
   const copyQuoteLink = () => {
@@ -684,6 +744,16 @@ export default function App() {
               PricePilot only uses anonymous route and pricing data to show you what customers pay — nothing else.
             </div>
           </div>
+        </div>
+
+        {/* Share Survey Button */}
+        <div style={{ background:"#f59e0b11", border:"1px solid #f59e0b44", borderRadius:10, padding:"14px 16px", marginBottom:4 }}>
+          <div style={{ fontSize:13, fontWeight:700, color:"#f59e0b", marginBottom:4 }}>Know another operator?</div>
+          <div style={{ fontSize:12, color:"#7d8590", marginBottom:10 }}>Share the survey — the more operators who join before launch, the more accurate the pricing for your area.</div>
+          <button onClick={copyShareSurvey}
+            style={{ width:"100%", padding:"10px 16px", background:surveyCopied?"#16a34a":"#f59e0b", border:"none", borderRadius:8, color:surveyCopied?"#fff":"#000", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+            {surveyCopied ? "Copied! Paste into WhatsApp ✓" : "Share Survey with Another Operator"}
+          </button>
         </div>
       </div>
 
