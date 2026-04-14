@@ -10,8 +10,17 @@ const supabase = createClient(
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const DRIVER_RATE    = 14.50;
-const FUEL_PER_LITRE = 1.75;  // current diesel price per litre
+const FUEL_PER_LITRE = 1.95;  // current diesel price per litre
 const RUNNING_UPLIFT  = 1.25; // 25% uplift for wear, tyres, maintenance
+
+// Dead mileage uplift by one-way distance — covers getting to/from job + idling
+// Short urban jobs have proportionally far more dead miles than long distance
+const getDeadMileUplift = (oneWayMiles) => {
+  if (!oneWayMiles || oneWayMiles === 0) return 1.6;
+  if (oneWayMiles < 25)  return 1.6;  // +60% — dead miles often equal job miles in cities
+  if (oneWayMiles < 75)  return 1.3;  // +30% — significant but smaller proportion
+  return 1.15;                         // +15% — dead miles tiny vs long distance job
+};
 
 // Miles per litre by vehicle size (realistic loaded figures)
 const VEHICLE_MPL = {
@@ -678,8 +687,10 @@ export default function App() {
                    : oneWayMiles;
   const vehicleMPL    = getMPL(result ? result.vehicle : "16-seater");
   const fuelPerMile   = (FUEL_PER_LITRE / vehicleMPL) * RUNNING_UPLIFT;
-  const fuel          = Math.round(totalMiles * fuelPerMile);
-  const litres        = Math.round(totalMiles / vehicleMPL);
+  const deadMileUplift = getDeadMileUplift(oneWayMiles);
+  const fuelMiles     = Math.round(totalMiles * deadMileUplift);
+  const fuel          = Math.round(fuelMiles * fuelPerMile);
+  const litres        = Math.round(fuelMiles / vehicleMPL);
 
   const driverHours   = (() => {
     if (trip === "return-different") {
