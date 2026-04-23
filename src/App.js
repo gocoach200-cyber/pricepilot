@@ -638,32 +638,26 @@ export default function App() {
         <div style={{ fontSize:13, color:"#7d8590", marginBottom:12 }}>Know What Customers Will Pay</div>
 
         <div style={{ background:"#161b22", border:"1px solid #21262d", borderRadius:10, padding:"14px 16px", marginBottom:4 }}>
-          <div style={{ fontSize:14, color:"#e6edf3", fontWeight:600, marginBottom:6 }}>
-            Find out what customers are willing to pay for any minibus or coach job
+          <div style={{ fontSize:14, color:"#e6edf3", fontWeight:700, marginBottom:8 }}>
+            How PricePilot works
           </div>
-          <div style={{ fontSize:12, color:"#7d8590", marginBottom:12 }}>
-            Stop guessing what customers will pay — PricePilot tells you.
+          <div style={{ fontSize:12, color:"#7d8590", lineHeight:1.7, marginBottom:10 }}>
+            Enter any job below and we'll show you what customers in your area are actually willing to pay — based on real data collected from coaches and minibus operators across the UK.
           </div>
-          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-            <div style={{ fontSize:12, color:"#7d8590", display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ color:"#f59e0b", fontWeight:700 }}>1</span>
-              <span>Enter your route, passengers and trip details</span>
-            </div>
-            <div style={{ fontSize:12, color:"#7d8590", display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ color:"#f59e0b", fontWeight:700 }}>2</span>
-              <span>See what customers in your area are willing to pay</span>
-            </div>
-            <div style={{ fontSize:12, color:"#7d8590", display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ color:"#f59e0b", fontWeight:700 }}>3</span>
-              <span>Quote confidently — knowing you're pricing right</span>
+          <div style={{ fontSize:12, color:"#7d8590", lineHeight:1.7, marginBottom:10 }}>
+            Our system uses real current market data, seasonal demand, day of week and UK events to give you accurate prices every time.
+          </div>
+          <div style={{ background:"#0d1117", borderRadius:8, padding:"10px 12px", marginBottom:10 }}>
+            <div style={{ fontSize:12, color:"#7d8590", lineHeight:1.8 }}>
+              <span style={{ fontWeight:700, color:"#f0f6fc" }}>The more you use it, the better it works for you.</span> Every time you log a job outcome — whether you won it or not — PricePilot learns what customers in your area are willing to pay. Your data improves your own prices first. Operators who log regularly get the most accurate results.
             </div>
           </div>
-          <div style={{ marginTop:12, paddingTop:10, borderTop:"1px solid #21262d" }}>
-            <div style={{ fontSize:11, fontWeight:700, color:"#4ade80", marginBottom:4 }}>Your customers are safe</div>
+          <div style={{ marginTop:4, paddingTop:10, borderTop:"1px solid #21262d" }}>
+            <div style={{ fontSize:11, fontWeight:700, color:"#4ade80", marginBottom:4 }}>Your customers are always protected</div>
             <div style={{ fontSize:11, color:"#484f58", lineHeight:1.5 }}>
               We never ask for customer names, phone numbers or email addresses. 
               We do not contact your customers. We do not store any customer personal information. 
-              PricePilot only uses anonymous route and pricing data to show you what customers pay — nothing else.
+              PricePilot only uses anonymous route and pricing data — nothing else.
             </div>
           </div>
         </div>
