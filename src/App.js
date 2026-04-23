@@ -40,88 +40,6 @@ const getMPL = (vehicle) => VEHICLE_MPL[vehicle] || 6;
 const FUEL_PER_MILE = (FUEL_PER_LITRE / 6) * RUNNING_UPLIFT; // default ~36p/mile
 const API_KEY = process.env.REACT_APP_API_KEY;
 
-// ─── Survey Questions ────────────────────────────────────────────────────────
-const VEHICLE_SIZES = ["8-seater","12-seater","16-seater","24-seater","32-seater","49-seater"];
-
-const UK_CITIES = [
-  "London","Birmingham","Manchester","Leeds","Bristol","Sheffield",
-  "Liverpool","Newcastle","Nottingham","Cardiff","Edinburgh","Glasgow",
-  "Reading","Brighton","Southampton","Leicester","Coventry","Oxford"
-];
-
-const TRIPS_BY_BASE = {
-  "London":       [
-    { from:"Peckham SE15, London",    to:"Heathrow Airport",      type:"One way",         time:"05:00"       },
-    { from:"Brixton SW2, London",     to:"Gatwick Airport",       type:"One way",         time:"06:00"       },
-    { from:"Hackney E8, London",      to:"Luton Airport",         type:"One way",         time:"04:30"       },
-    { from:"Lewisham SE13, London",   to:"Stansted Airport",      type:"One way",         time:"05:00"       },
-    { from:"Central London",          to:"O2 Arena",              type:"Same day return", time:"17:00-23:00" },
-    { from:"Peckham SE15, London",    to:"Wembley Stadium",       type:"Same day return", time:"13:00-19:00" },
-    { from:"Brixton SW2, London",     to:"Brighton City Centre",  type:"Same day return", time:"09:00-18:00" },
-    { from:"Central London",          to:"Birmingham City Centre", type:"Same day return", time:"09:00-17:30" },
-    { from:"Hackney E8, London",      to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:30" },
-    { from:"South London",            to:"Oxford City Centre",    type:"Same day return", time:"09:00-17:00" },
-  ],
-  "Birmingham":   [
-    { from:"Birmingham City Centre",  to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:30" },
-    { from:"Birmingham City Centre",  to:"Leeds City Centre",     type:"Same day return", time:"09:00-17:30" },
-    { from:"Birmingham City Centre",  to:"London Victoria",       type:"Same day return", time:"08:00-19:00" },
-    { from:"Birmingham City Centre",  to:"Bristol City Centre",   type:"Same day return", time:"09:00-17:00" },
-    { from:"Birmingham City Centre",  to:"Cardiff City Centre",   type:"Same day return", time:"09:00-17:00" },
-  ],
-  "Manchester":   [
-    { from:"Manchester Piccadilly",   to:"Leeds City Centre",     type:"Same day return", time:"10:00-18:30" },
-    { from:"Manchester Piccadilly",   to:"Liverpool City Centre", type:"Same day return", time:"10:00-18:00" },
-    { from:"Manchester Piccadilly",   to:"London Victoria",       type:"Same day return", time:"08:00-19:00" },
-    { from:"Manchester Piccadilly",   to:"Newcastle City Centre", type:"Same day return", time:"09:00-18:00" },
-    { from:"Manchester Airport",      to:"Leeds City Centre",     type:"Return diff day", time:"06:00"       },
-  ],
-  "Leeds":        [
-    { from:"Leeds City Centre",       to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:00" },
-    { from:"Leeds City Centre",       to:"Newcastle City Centre", type:"Same day return", time:"09:00-17:00" },
-    { from:"Leeds City Centre",       to:"London Victoria",       type:"Same day return", time:"08:00-19:00" },
-    { from:"Leeds City Centre",       to:"Birmingham City Centre",type:"Same day return", time:"09:00-17:30" },
-    { from:"Leeds Bradford Airport",  to:"London Victoria",       type:"Return diff day", time:"06:00"       },
-  ],
-  "Bristol":      [
-    { from:"Bristol City Centre",     to:"London Victoria",       type:"Same day return", time:"09:00-18:00" },
-    { from:"Bristol City Centre",     to:"Birmingham City Centre",type:"Same day return", time:"09:00-17:00" },
-    { from:"Bristol City Centre",     to:"Cardiff City Centre",   type:"Same day return", time:"10:00-18:00" },
-    { from:"Bristol City Centre",     to:"Manchester Piccadilly", type:"Same day return", time:"08:00-19:00" },
-    { from:"Bristol Airport",         to:"London Victoria",       type:"Return diff day", time:"06:00"       },
-  ],
-  "Reading":      [
-    { from:"Reading Town Centre",     to:"London Victoria",       type:"Same day return", time:"09:00-18:00" },
-    { from:"Reading Town Centre",     to:"Birmingham City Centre",type:"Same day return", time:"09:00-17:30" },
-    { from:"Reading Town Centre",     to:"Bristol City Centre",   type:"Same day return", time:"09:00-17:00" },
-    { from:"Reading Town Centre",     to:"Heathrow Airport",      type:"Return diff day", time:"05:00"       },
-    { from:"Reading Town Centre",     to:"Manchester Piccadilly", type:"Same day return", time:"08:00-19:00" },
-  ],
-  "default":      [
-    { from:"City Centre",             to:"London Victoria",       type:"Same day return", time:"09:00-18:00" },
-    { from:"City Centre",             to:"Manchester Piccadilly", type:"Same day return", time:"09:00-18:30" },
-    { from:"City Centre",             to:"Birmingham City Centre",type:"Same day return", time:"09:00-17:30" },
-  ],
-};
-
-const getPaxFromVehicle = (vehicle) => {
-  if (vehicle === "8-seater")  return 8;
-  if (vehicle === "12-seater") return 12;
-  if (vehicle === "16-seater") return 16;
-  if (vehicle === "24-seater") return 24;
-  if (vehicle === "32-seater") return 30;
-  if (vehicle === "49-seater") return 45;
-  return 16;
-};
-
-const getSurveyTrips = (base, vehicle) => {
-  const allTrips = TRIPS_BY_BASE[base] || TRIPS_BY_BASE["default"];
-  const pax = getPaxFromVehicle(vehicle);
-  // Randomly select 3 trips from the pool so repeat visitors see different routes
-  const shuffled = [...allTrips].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 3).map(t => ({ ...t, pax }));
-};
-
 // ─── Real Market Data (collected from UK operators, May 2025) ─────────────────
 const MARKET_DATA = [
   { from:"birmingham", to:"manchester", pax:16, type:"return", avg:583, low:575, high:600 },
@@ -509,15 +427,6 @@ export default function App() {
   const [isLuxury,     setIsLuxury]     = useState(false);
   const [operatorPrice, setOperatorPrice] = useState("");
   const [priceFeedback, setPriceFeedback] = useState("");
-  const [showSurvey,   setShowSurvey]   = useState(true);
-  const [setupDone,    setSetupDone]    = useState(false);
-  const [operatorBase, setOperatorBase] = useState("");
-  const [operatorVehicle, setOperatorVehicle] = useState("");
-  const [surveyTrips,  setSurveyTrips]  = useState([]);
-  const [surveyStep,   setSurveyStep]   = useState(0);
-  const [surveyAnswers,setSurveyAnswers]= useState([]);
-  const [surveyInput,  setSurveyInput]  = useState("");
-  const [surveyDone,   setSurveyDone]   = useState(false);
 
   const callAPI = async (variation) => {
     const ctrl = new AbortController();
@@ -712,7 +621,9 @@ export default function App() {
   const costs         = fuel + driverCost;
   const margin        = displayPrice - costs;
   const marginPct     = displayPrice > 0 ? Math.round((margin / displayPrice) * 100) : 0;
-  const floorPrice    = Math.round(costs * 1.15);
+  // Floor price — for owner-drivers use hours × £30 minimum so floor is never just fuel alone
+  const ownerDriverFloor = isOwnerDriver ? Math.round(Math.max(driverHours, 4) * 30) : 0;
+  const floorPrice    = Math.max(Math.round(costs * 1.15), ownerDriverFloor);
   const perPerson     = pax && displayPrice ? Math.round(displayPrice / parseInt(pax)) : 0;
   const season        = isBusy(date);
   const congestion    = from && to && isLondon(from, to);
@@ -789,132 +700,6 @@ export default function App() {
           </div>
         );
       })()}
-
-      {/* ── Survey Popup ── */}
-      {(showSurvey === true && surveyDone === false) ? (
-        <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.75)", zIndex:100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-          <div style={{ background:"#161b22", border:"1px solid #21262d", borderRadius:12, padding:24, maxWidth:480, width:"100%" }}>
-
-            {/* Screen 1 - Setup */}
-            {!setupDone && (
-              <>
-                <div style={{ fontSize:11, color:"#f59e0b", textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>Quick Setup</div>
-                <div style={{ fontSize:16, fontWeight:700, color:"#f0f6fc", marginBottom:6 }}>Welcome to PricePilot</div>
-                <div style={{ fontSize:13, color:"#7d8590", marginBottom:20 }}>Tell us a bit about your operation so we can show you the most relevant pricing data.</div>
-
-                <label style={{ display:"block", fontSize:11, fontWeight:600, color:"#7d8590", textTransform:"uppercase", marginBottom:6 }}>Where are you based?</label>
-                <select style={{ ...I, marginBottom:14 }} value={operatorBase} onChange={e => setOperatorBase(e.target.value)}>
-                  <option value="">Select your city...</option>
-                  {UK_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-
-                <label style={{ display:"block", fontSize:11, fontWeight:600, color:"#7d8590", textTransform:"uppercase", marginBottom:6 }}>What is your largest vehicle?</label>
-                <select style={{ ...I, marginBottom:20 }} value={operatorVehicle} onChange={e => setOperatorVehicle(e.target.value)}>
-                  <option value="">Select vehicle size...</option>
-                  {VEHICLE_SIZES.map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
-
-                <div style={{ display:"flex", gap:10 }}>
-                  <button
-                    onClick={async () => {
-                      if (!operatorBase || !operatorVehicle) return;
-                      const trips = getSurveyTrips(operatorBase, operatorVehicle);
-                      setSurveyTrips(trips);
-                      setSetupDone(true);
-                    }}
-                    style={{ flex:1, padding:12, background:operatorBase && operatorVehicle ? "#f59e0b" : "#333", border:"none", borderRadius:8, color:operatorBase && operatorVehicle ? "#000" : "#777", fontWeight:700, fontSize:14, cursor:"pointer" }}
-                  >
-                    Continue
-                  </button>
-                  <button onClick={() => setShowSurvey(false)} style={{ padding:12, background:"#21262d", border:"1px solid #30363d", borderRadius:8, color:"#7d8590", fontWeight:700, fontSize:13, cursor:"pointer" }}>
-                    Skip
-                  </button>
-                </div>
-                <div style={{ fontSize:11, color:"#484f58", marginTop:12, textAlign:"center" }}>Takes 60 seconds · No customer data required · 100% anonymous</div>
-              </>
-            )}
-
-            {/* Screen 2 - Survey Questions */}
-            {setupDone && surveyTrips.length > 0 && (
-              <>
-                <div style={{ fontSize:11, color:"#f59e0b", textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>Question {surveyStep + 1} of {surveyTrips.length}</div>
-                <div style={{ fontSize:16, fontWeight:700, color:"#f0f6fc", marginBottom:6 }}>What would you charge?</div>
-                <div style={{ fontSize:13, color:"#7d8590", marginBottom:16 }}>Your answer is anonymous and helps build accurate market pricing.</div>
-
-                <div style={{ background:"#0d1117", borderRadius:8, padding:14, marginBottom:16 }}>
-                  <div style={{ fontSize:13, color:"#e6edf3", marginBottom:6 }}>
-                    <span style={{ color:"#f59e0b", fontWeight:700 }}>{surveyTrips[surveyStep].from}</span>
-                    <span style={{ color:"#484f58" }}> → </span>
-                    <span style={{ color:"#f59e0b", fontWeight:700 }}>{surveyTrips[surveyStep].to}</span>
-                  </div>
-                  <div style={{ fontSize:12, color:"#7d8590" }}>
-                    {surveyTrips[surveyStep].pax} passengers · {surveyTrips[surveyStep].type} · {surveyTrips[surveyStep].time}
-                  </div>
-                </div>
-
-                <label style={{ display:"block", fontSize:11, fontWeight:600, color:"#7d8590", textTransform:"uppercase", marginBottom:6 }}>Your price (£)</label>
-                <input
-                  style={{ ...I, marginBottom:16, fontSize:18, fontWeight:700 }}
-                  type="number"
-                  placeholder="e.g. 650"
-                  value={surveyInput}
-                  onChange={e => setSurveyInput(e.target.value)}
-                />
-
-                {/* Progress dots */}
-                <div style={{ display:"flex", gap:6, justifyContent:"center", marginBottom:16 }}>
-                  {surveyTrips.map((_, i) => (
-                    <div key={i} style={{ width:8, height:8, borderRadius:"50%", background: i <= surveyStep ? "#f59e0b" : "#30363d" }} />
-                  ))}
-                </div>
-
-                <div style={{ display:"flex", gap:10 }}>
-                  <button
-                    onClick={async () => {
-                      if (!surveyInput) return;
-                      const updated = [...surveyAnswers, { ...surveyTrips[surveyStep], price: parseInt(surveyInput) }];
-                      setSurveyAnswers(updated);
-                      setSurveyInput("");
-                      // Save to Supabase
-                      try {
-                        await supabase.from("survey_answers").insert({
-                          operator_base: operatorBase,
-                          vehicle_size: operatorVehicle,
-                          from_location: surveyTrips[surveyStep].from,
-                          to_location: surveyTrips[surveyStep].to,
-                          passengers: surveyTrips[surveyStep].pax,
-                          trip_type: surveyTrips[surveyStep].type,
-                          quoted_price: parseInt(surveyInput)
-                        });
-                      } catch(e) { console.log("Survey save error:", e); }
-                      if (surveyStep + 1 < surveyTrips.length) {
-                        setSurveyStep(surveyStep + 1);
-                      } else {
-                        setSurveyDone(true);
-                        setShowSurvey(false);
-                      }
-                    }}
-                    style={{ flex:1, padding:12, background:surveyInput ? "#f59e0b" : "#333", border:"none", borderRadius:8, color:surveyInput ? "#000" : "#777", fontWeight:700, fontSize:14, cursor:"pointer" }}
-                  >
-                    {surveyStep + 1 < surveyTrips.length ? "Next" : "Submit"}
-                  </button>
-                  <button onClick={() => setShowSurvey(false)} style={{ padding:12, background:"#21262d", border:"1px solid #30363d", borderRadius:8, color:"#7d8590", fontWeight:700, fontSize:13, cursor:"pointer" }}>
-                    Skip
-                  </button>
-                </div>
-              </>
-            )}
-
-          </div>
-        </div>
-      ) : null}
-
-      {/* Survey thank you banner */}
-      {surveyDone && (
-        <div style={{ background:"#16a34a22", border:"1px solid #16a34a55", borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#4ade80", textAlign:"center" }}>
-          Thank you! Your pricing data helps make PricePilot more accurate for everyone.
-        </div>
-      )}
 
       {/* ── Form ── */}
       <div style={C}>
@@ -1149,7 +934,7 @@ export default function App() {
           {/* Cost breakdown */}
           <div style={{ background:"#0d1117", borderRadius:8, padding:14, marginBottom:16 }}>
             <div style={{ fontSize:11, fontWeight:700, color:"#7d8590", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:10 }}>Operator Cost Estimate</div>
-            <BRow label={"Fuel + running costs (" + totalMiles + " mi, ~" + litres + "L, " + Math.round(fuelPerMile * 100) + "p/mi)"} value={fmt(fuel)} />
+            <BRow label={"Fuel + running costs (" + totalMiles + " job mi + dead miles = ~" + fuelMiles + " mi, ~" + litres + "L, " + Math.round(fuelPerMile * 100) + "p/mi)"} value={fmt(fuel)} />
             <BRow label={"Driver (" + driverHours + " hrs at £14.50/hr" + (driverCost === 60 ? ", min charge applied" : "") + ")"} value={fmt(driverCost)} />
             <BRow label="Total est. costs"                                        value={fmt(costs)} />
             <BRow label="Min floor price (never go below)"                        value={fmt(floorPrice)} highlight />
